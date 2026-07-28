@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Υπολογιστής Χαρτοκιβωτίων & Βάρους</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen p-4 sm:p-8 font-sans text-slate-800">
+
+    <div class="max-w-5xl mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-xl border border-slate-200">
+        
+        <!-- HEADER -->
+        <header class="text-center mb-8 pb-6 border-b border-slate-200">
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">📦 Έξυπνος Υπολογιστής Χαρτοκιβωτίων & Βάρους</h1>
+            <p class="text-slate-500 text-sm mt-1">Υπολογισμός βέλτιστου αριθμού & μεγέθους κουτιών με όριο βάρους **18 kg** ανά κιβώτιο.</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- 1. ΔΙΑΘΕΣΙΜΑ ΧΑΡΤΟΚΙΒΩΤΙΑ ΑΠΟΘΗΚΗΣ (Col 5) -->
+            <div class="lg:col-span-5 bg-slate-50 p-5 rounded-xl border border-slate-200 flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                            <span>🏢</span> Διαθέσιμα Κουτιά Αποθήκης
+                        </h2>
+                        <span class="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-medium" id="binCountBadge">0 κουτιά</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mb-3">Λίστα με τα 37 χαρτοκιβώτια της αποθήκης σας:</p>
+
+                    <ul id="binsList" class="space-y-2 mb-4 text-sm max-h-60 overflow-y-auto pr-1">
+                        <!-- Γεμίζει δυναμικά -->
+                    </ul>
+                </div>
+
+                <!-- Φόρμα Προσθήκης Νέου Κουτιού -->
+                <div class="pt-3 border-t border-slate-200">
+                    <p class="text-xs font-semibold text-slate-600 mb-2">+ Προσθήκη Νέου Χαρτοκιβωτίου:</p>
+                    <div class="grid grid-cols-4 gap-2 text-xs">
+                        <input type="text" id="binName" placeholder="Όνομα" class="border border-slate-300 p-2 rounded-lg bg-white col-span-4 sm:col-span-1">
+                        <input type="number" step="any" id="binL" placeholder="Μήκος" class="border border-slate-300 p-2 rounded-lg bg-white">
+                        <input type="number" step="any" id="binW" placeholder="Πλάτος" class="border border-slate-300 p-2 rounded-lg bg-white">
+                        <input type="number" step="any" id="binH" placeholder="Ύψος" class="border border-slate-300 p-2 rounded-lg bg-white">
+                    </div>
+                    <button onclick="addCustomBin()" class="mt-2 w-full bg-slate-800 text-white text-xs py-2 rounded-lg font-medium hover:bg-slate-900 transition cursor-pointer">
+                        Προσθήκη Κουτιού στη Λίστα
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2. ΦΟΡΜΑ ΕΙΣΑΓΩΓΗΣ ΠΡΟΪΟΝΤΟΣ (Col 7) -->
+            <div class="lg:col-span-7 bg-blue-50/60 p-5 rounded-xl border border-blue-100 flex flex-col justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-blue-900 mb-4 flex items-center gap-2">
+                        <span>📥</span> Στοιχεία Τεμαχίου & Ποσότητα
+                    </h2>
+
+                    <div class="space-y-4">
+                        <!-- Διαστάσεις -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Διαστάσεις 1 Τεμαχίου (cm)</label>
+                            <div class="grid grid-cols-3 gap-3">
+                                <div>
+                                    <span class="text-[10px] text-slate-400 block mb-0.5">Μήκος (cm)</span>
+                                    <input type="number" step="any" id="itemL" placeholder="π.χ. 33" class="w-full border border-slate-300 p-2.5 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold">
+                                </div>
+                                <div>
+                                    <span class="text-[10px] text-slate-400 block mb-0.5">Πλάτος (cm)</span>
+                                    <input type="number" step="any" id="itemW" placeholder="π.χ. 22.8" class="w-full border border-slate-300 p-2.5 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold">
+                                </div>
+                                <div>
+                                    <span class="text-[10px] text-slate-400 block mb-0.5">Ύψος (cm)</span>
+                                    <input type="number" step="any" id="itemH" placeholder="π.χ. 10.5" class="w-full border border-slate-300 p-2.5 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Βάρος & Ποσότητα -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Βάρος 1 Τεμαχίου (kg)</label>
+                                <input type="number" step="any" id="itemWeight" placeholder="π.χ. 1.8" class="w-full border border-slate-300 p-2.5 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Συνολική Ποσότητα (τμχ)</label>
+                                <input type="number" id="itemQty" placeholder="π.χ. 30" min="1" class="w-full border border-slate-300 p-2.5 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold">
+                            </div>
+                        </div>
+
+                        <!-- Όριο Βάρους (Προεπιλογή 18kg) -->
+                        <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center justify-between text-xs text-amber-900">
+                            <span class="font-medium">⚖️ Μέγιστο Επιτρεπτό Βάρος / Κιβώτιο:</span>
+                            <div class="flex items-center gap-1 font-bold">
+                                <input type="number" id="maxBoxWeight" value="18" step="0.5" class="w-16 border border-amber-300 rounded p-1 text-center bg-white text-sm">
+                                <span>kg</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="calculatePacking()" class="mt-6 w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold text-base hover:bg-emerald-700 transition shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer">
+                    <span>🚀</span> Υπολογισμός Βέλτιστης Συσκευασίας
+                </button>
+            </div>
+        </div>
+
+        <!-- ΑΠΟΤΕΛΕΣΜΑΤΑ -->
+        <div id="result" class="mt-8 hidden transition-all"></div>
+    </div>
+
+    <script>
+        // Τα 37 Χαρτοκιβώτια Αποθήκης από τις φωτογραφίες σου
+        let availableBins = [
+            // Φωτογραφία 1 (Αριστερή Στήλη)
+            { id: 1, name: "Κουτί 40x40x30", l: 40, w: 40, h: 30 },
+            { id: 2, name: "Κουτί 40x30x40", l: 40, w: 30, h: 40 },
+            { id: 3, name: "Κουτί 40x30x30", l: 40, w: 30, h: 30 },
+            { id: 4, name: "Κουτί 40x30x20", l: 40, w: 30, h: 20 },
+            { id: 5, name: "Κουτί 40x40x15", l: 40, w: 40, h: 15 },
+            { id: 6, name: "Κουτί 40x30x15", l: 40, w: 30, h: 15 },
+            { id: 7, name: "Κουτί 40x30x12", l: 40, w: 30, h: 12 },
+            { id: 8, name: "Κουτί 40x30x8",  l: 40, w: 30, h: 8 },
+            { id: 9, name: "Κουτί 33x33x20", l: 33, w: 33, h: 20 },
+            { id: 10, name: "Κουτί 36x36x15", l: 36, w: 36, h: 15 },
+            { id: 11, name: "Κουτί 35x24x15", l: 35, w: 24, h: 15 },
+            { id: 12, name: "Κουτί 31x31x17", l: 31, w: 31, h: 17 },
+
+            // Φωτογραφία 1 (Δεξιά Στήλη)
+            { id: 13, name: "Κουτί 30x30x25", l: 30, w: 30, h: 25 },
+            { id: 14, name: "Κουτί 30x25x15", l: 30, w: 25, h: 15 },
+            { id: 15, name: "Κουτί 30x20x15", l: 30, w: 20, h: 15 },
+            { id: 16, name: "Κουτί 30x20x12", l: 30, w: 20, h: 12 },
+            { id: 17, name: "Κουτί 25x18x12", l: 25, w: 18, h: 12 },
+            { id: 18, name: "Κουτί 22x10x15", l: 22, w: 10, h: 15 },
+            { id: 19, name: "Κουτί 20.5x19.5x8.5", l: 20.5, w: 19.5, h: 8.5 },
+            { id: 20, name: "Κουτί 20x15x12.5", l: 20, w: 15, h: 12.5 },
+            { id: 21, name: "Κουτί 15x15x13", l: 15, w: 15, h: 13 },
+            { id: 22, name: "Κουτί 15x15x15", l: 15, w: 15, h: 15 },
+            { id: 23, name: "Κουτί 27x27x25", l: 27, w: 27, h: 25 },
+            { id: 24, name: "Κουτί 25x17x13", l: 25, w: 17, h: 13 },
+
+            // Φωτογραφία 2 (Μεγάλες Κούτες)
+            { id: 25, name: "Κούτα 70x50x40", l: 70, w: 50, h: 40 },
+            { id: 26, name: "Κούτα 60x40x60", l: 60, w: 40, h: 60 },
+            { id: 27, name: "Κούτα 60x40x40", l: 60, w: 40, h: 40 },
+            { id: 28, name: "Κούτα 60x40x30", l: 60, w: 40, h: 30 },
+            { id: 29, name: "Κούτα 60x30x40", l: 60, w: 30, h: 40 },
+            { id: 30, name: "Κούτα 60x30x30", l: 60, w: 30, h: 30 },
+            { id: 31, name: "Κούτα 50x45x11", l: 50, w: 45, h: 11 },
+            { id: 32, name: "Κούτα 50x50x50", l: 50, w: 50, h: 50 },
+            { id: 33, name: "Κούτα 50x40x40", l: 50, w: 40, h: 40 },
+            { id: 34, name: "Κούτα 50x40x30", l: 50, w: 40, h: 30 },
+            { id: 35, name: "Κούτα 50x40x20", l: 50, w: 40, h: 20 },
+            { id: 36, name: "Κούτα 50x30x40", l: 50, w: 30, h: 40 },
+            { id: 37, name: "Κούτα 50x40x15", l: 50, w: 40, h: 15 }
+        ];
+
+        window.onload = function() {
+            renderBinsList();
+        };
+
+        function renderBinsList() {
+            const list = document.getElementById('binsList');
+            document.getElementById('binCountBadge').innerText = `${availableBins.length} κουτιά`;
+
+            list.innerHTML = availableBins.map(bin => `
+                <li class="flex justify-between items-center bg-white p-2.5 rounded-lg border border-slate-200 shadow-xs text-xs">
+                    <div>
+                        <span class="font-bold text-slate-800">${bin.name}</span>
+                        <span class="text-slate-500 block">${bin.l} x ${bin.w} x ${bin.h} cm (${(bin.l * bin.w * bin.h).toLocaleString()} cm³)</span>
+                    </div>
+                    <button onclick="removeBin(${bin.id})" class="text-slate-400 hover:text-red-500 p-1 font-bold transition cursor-pointer" title="Διαγραφή">✕</button>
+                </li>
+            `).join('');
+        }
+
+        function addCustomBin() {
+            const name = document.getElementById('binName').value.trim() || `Κουτί ${availableBins.length + 1}`;
+            const l = parseFloat(document.getElementById('binL').value);
+            const w = parseFloat(document.getElementById('binW').value);
+            const h = parseFloat(document.getElementById('binH').value);
+
+            if (!l || !w || !h || l <= 0 || w <= 0 || h <= 0) {
+                alert("Παρακαλώ εισάγετε έγκυρες διαστάσεις για το νέο χαρτοκιβώτιο!");
+                return;
+            }
+
+            availableBins.push({ id: Date.now(), name, l, w, h });
+            renderBinsList();
+
+            document.getElementById('binName').value = '';
+            document.getElementById('binL').value = '';
+            document.getElementById('binW').value = '';
+            document.getElementById('binH').value = '';
+        }
+
+        function removeBin(id) {
+            if (availableBins.length <= 1) {
+                alert("Πρέπει να υπάρχει τουλάχιστον ένα διαθέσιμο κουτί στη λίστα!");
+                return;
+            }
+            availableBins = availableBins.filter(b => b.id !== id);
+            renderBinsList();
+        }
+
+        function getMaxGeomFit(bin, itemL, itemW, itemH) {
+            const itemOrientations = [
+                [itemL, itemW, itemH],
+                [itemL, itemH, itemW],
+                [itemW, itemL, itemH],
+                [itemW, itemH, itemL],
+                [itemH, itemL, itemW],
+                [itemH, itemW, itemL]
+            ];
+
+            let maxCount = 0;
+
+            for (let [iL, iW, iH] of itemOrientations) {
+                if (iL <= bin.l && iW <= bin.w && iH <= bin.h) {
+                    const countL = Math.floor(bin.l / iL);
+                    const countW = Math.floor(bin.w / iW);
+                    const countH = Math.floor(bin.h / iH);
+                    const total = countL * countW * countH;
+                    if (total > maxCount) {
+                        maxCount = total;
+                    }
+                }
+            }
+
+            return maxCount;
+        }
+
+        function calculatePacking() {
+            const itemL = parseFloat(document.getElementById('itemL').value);
+            const itemW = parseFloat(document.getElementById('itemW').value);
+            const itemH = parseFloat(document.getElementById('itemH').value);
+            const itemWeight = parseFloat(document.getElementById('itemWeight').value);
+            const totalQty = parseInt(document.getElementById('itemQty').value);
+            const maxBoxWeight = parseFloat(document.getElementById('maxBoxWeight').value) || 18;
+
+            if (!itemL || !itemW || !itemH || !itemWeight || !totalQty || itemL <= 0 || itemW <= 0 || itemH <= 0 || itemWeight <= 0 || totalQty <= 0) {
+                alert("Παρακαλώ συμπληρώστε όλα τα πεδία του προϊόντος (Διαστάσεις, Βάρος, Ποσότητα) με θετικούς αριθμούς!");
+                return;
+            }
+
+            if (itemWeight > maxBoxWeight) {
+                alert(`Το βάρος ενός μόνο τεμαχίου (${itemWeight} kg) ξεπερνά το μέγιστο όριο κιβωτίου (${maxBoxWeight} kg)!`);
+                return;
+            }
+
+            const binCapabilities = availableBins.map(bin => {
+                const geomFit = getMaxGeomFit(bin, itemL, itemW, itemH);
+                const weightFit = Math.floor(maxBoxWeight / itemWeight);
+                const actualFit = Math.min(geomFit, weightFit);
+
+                return {
+                    ...bin,
+                    geomFit,
+                    weightFit,
+                    actualFit,
+                    volume: bin.l * bin.w * bin.h
+                };
+            }).filter(b => b.actualFit > 0);
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.classList.remove('hidden');
+
+            if (binCapabilities.length === 0) {
+                resultDiv.innerHTML = `
+                    <div class="p-5 bg-red-50 border border-red-200 rounded-xl text-red-900">
+                        <div class="flex items-center gap-3">
+                            <span class="text-3xl">❌</span>
+                            <div>
+                                <h3 class="font-bold text-lg">Δεν βρέθηκε κατάλληλο κουτί</h3>
+                                <p class="text-sm mt-1">Το προϊόν (${itemL} x ${itemW} x ${itemH} cm, ${itemWeight} kg) δεν χωράει σε κανένα από τα διαθέσιμα κουτιά της αποθήκης σας.</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                resultDiv.scrollIntoView({ behavior: 'smooth' });
+                return;
+            }
+
+            binCapabilities.sort((a, b) => b.actualFit - a.actualFit || a.volume - b.volume);
+            const mainBin = binCapabilities[0];
+
+            const fullBoxesCount = Math.floor(totalQty / mainBin.actualFit);
+            const remainderQty = totalQty % mainBin.actualFit;
+
+            let remainderBin = null;
+
+            if (remainderQty > 0) {
+                const suitableBinsForRemainder = binCapabilities
+                    .filter(b => b.actualFit >= remainderQty)
+                    .sort((a, b) => a.volume - b.volume);
+
+                if (suitableBinsForRemainder.length > 0) {
+                    remainderBin = suitableBinsForRemainder[0];
+                } else {
+                    remainderBin = mainBin;
+                }
+            }
+
+            const totalOrderWeight = (totalQty * itemWeight).toFixed(2);
+            let breakdownHtml = '';
+
+            if (fullBoxesCount > 0) {
+                const boxWeight = (mainBin.actualFit * itemWeight).toFixed(2);
+                breakdownHtml += `
+                    <div class="bg-white p-4 rounded-xl border border-emerald-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div class="flex items-center gap-3">
+                            <span class="bg-emerald-600 text-white font-extrabold text-base px-3 py-1.5 rounded-lg shadow-xs">${fullBoxesCount}x</span>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-base">${mainBin.name} <span class="text-xs font-normal text-slate-500">(${mainBin.l} x ${mainBin.w} x ${mainBin.h} cm)</span></h4>
+                                <p class="text-xs text-slate-600 mt-0.5">Περιέχει: <strong>${mainBin.actualFit} τμχ</strong> ανά κιβώτιο</p>
+                            </div>
+                        </div>
+                        <div class="text-left sm:text-right bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 w-full sm:w-auto">
+                            <span class="text-[10px] text-emerald-700 block font-semibold uppercase">Βάρος ανά Κιβώτιο</span>
+                            <span class="text-sm font-extrabold text-emerald-900">${boxWeight} kg</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (remainderQty > 0 && remainderBin) {
+                const remainderBoxWeight = (remainderQty * itemWeight).toFixed(2);
+                breakdownHtml += `
+                    <div class="bg-white p-4 rounded-xl border border-blue-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div class="flex items-center gap-3">
+                            <span class="bg-blue-600 text-white font-extrabold text-base px-3 py-1.5 rounded-lg shadow-xs">1x</span>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-base">${remainderBin.name} <span class="text-xs font-normal text-slate-500">(${remainderBin.l} x ${remainderBin.w} x ${remainderBin.h} cm)</span></h4>
+                                <p class="text-xs text-slate-600 mt-0.5">Περιέχει: <strong>${remainderQty} τμχ</strong> (υπόλοιπο)</p>
+                            </div>
+                        </div>
+                        <div class="text-left sm:text-right bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 w-full sm:w-auto">
+                            <span class="text-[10px] text-blue-700 block font-semibold uppercase">Βάρος Κιβωτίου</span>
+                            <span class="text-sm font-extrabold text-blue-900">${remainderBoxWeight} kg</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const totalBoxes = fullBoxesCount + (remainderQty > 0 ? 1 : 0);
+
+            resultDiv.innerHTML = `
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+                    <div class="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200">
+                        <div>
+                            <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider block">Αποτέλεσμα Συσκευασίας</span>
+                            <h3 class="text-xl font-extrabold text-slate-800">Απαιτούνται συνολικά <span class="text-emerald-600">${totalBoxes} κιβώτιο/α</span></h3>
+                        </div>
+                        <div class="flex gap-4 text-xs">
+                            <div class="bg-white px-3 py-2 rounded-xl border border-slate-200 text-center">
+                                <span class="text-slate-400 block">Συνολικό Βάρος</span>
+                                <span class="font-bold text-slate-700 text-sm">${totalOrderWeight} kg</span>
+                            </div>
+                            <div class="bg-white px-3 py-2 rounded-xl border border-slate-200 text-center">
+                                <span class="text-slate-400 block">Συνολικά Τεμάχια</span>
+                                <span class="font-bold text-slate-700 text-sm">${totalQty} τμχ</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Αναλυτική Κατανομή Κιβωτίων:</h4>
+                        ${breakdownHtml}
+                    </div>
+
+                    <div class="text-xs text-slate-500 bg-white p-3 rounded-lg border border-slate-200 flex items-center justify-between">
+                        <span>ℹ️ Όριο βάρους ανά κιβώτιο: <strong>${maxBoxWeight} kg</strong></span>
+                        <span>Βάρος 1 τμχ: <strong>${itemWeight} kg</strong></span>
+                    </div>
+                </div>
+            `;
+
+            resultDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
