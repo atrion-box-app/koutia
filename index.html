@@ -45,6 +45,7 @@
                 left: 0 !important;
                 top: 0 !important;
                 width: 62mm !important;
+                height: 29mm !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 background: white !important;
@@ -52,14 +53,14 @@
                 print-color-adjust: exact !important;
             }
             .thermal-label {
-                width: 58mm !important;
-                height: 26mm !important;
+                width: 52mm !important;
+                height: 23mm !important;
                 page-break-after: always !important;
                 break-after: page !important;
                 break-inside: avoid !important;
                 box-sizing: border-box !important;
-                padding: 1mm 1.5mm !important;
-                margin: 1.5mm auto !important;
+                padding: 0.5mm 1mm !important;
+                margin: 2.5mm auto !important;
                 display: flex !important;
                 flex-direction: column !important;
                 justify-content: space-between !important;
@@ -663,25 +664,25 @@
             individualBoxes.forEach((box, idx) => {
                 const labelNum = `${idx + 1}/${totalBoxes}`;
 
-                // Σχέδιο Ετικέτας
+                // Σχέδιο Ετικέτας (Βελτιστοποιημένο για 52mm x 23mm)
                 const labelContent = `
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1.5px solid #000; padding-bottom: 2px;">
-                        <span style="font-size: 11px; font-weight: 900; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 42mm;">${projectName}</span>
-                        <span style="font-size: 8px; font-weight: 800; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">${labelNum}</span>
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #000; padding-bottom: 1px; margin-bottom: 1px;">
+                        <span style="font-size: 10px; font-weight: 900; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38mm; line-height: 1;">${projectName}</span>
+                        <span style="font-size: 8px; font-weight: 800; background: #000; color: #fff; padding: 1px 3px; border-radius: 2px; line-height: 1;">${labelNum}</span>
                     </div>
 
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin: 2px 0;">
-                        <div style="border: 1px solid #000; padding: 2px 4px; border-radius: 3px; text-align: center; flex: 1; margin-right: 3px;">
-                            <span style="font-size: 6px; font-weight: 700; display: block; text-transform: uppercase; line-height: 1;">ΠΟΝΟΤΗΤΑ</span>
-                            <span style="font-size: 12px; font-weight: 900; line-height: 1;">${box.qty} <span style="font-size: 7px; font-weight: 600;">τμχ</span></span>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin: 1px 0;">
+                        <div style="border: 1px solid #000; padding: 1px 2px; border-radius: 2px; text-align: center; flex: 1; margin-right: 2px;">
+                            <span style="font-size: 5.5px; font-weight: 700; display: block; text-transform: uppercase; line-height: 1;">ΠΟΣΟΤΗΤΑ</span>
+                            <span style="font-size: 10.5px; font-weight: 900; line-height: 1;">${box.qty} <span style="font-size: 6.5px; font-weight: 600;">τμχ</span></span>
                         </div>
-                        <div style="border: 1px solid #000; padding: 2px 4px; border-radius: 3px; text-align: center; flex: 1;">
-                            <span style="font-size: 6px; font-weight: 700; display: block; text-transform: uppercase; line-height: 1;">ΒΑΡΟΣ</span>
-                            <span style="font-size: 12px; font-weight: 900; line-height: 1;">${box.weight} <span style="font-size: 7px; font-weight: 600;">kg</span></span>
+                        <div style="border: 1px solid #000; padding: 1px 2px; border-radius: 2px; text-align: center; flex: 1;">
+                            <span style="font-size: 5.5px; font-weight: 700; display: block; text-transform: uppercase; line-height: 1;">ΒΑΡΟΣ</span>
+                            <span style="font-size: 10.5px; font-weight: 900; line-height: 1;">${box.weight} <span style="font-size: 6.5px; font-weight: 600;">kg</span></span>
                         </div>
                     </div>
 
-                    <div style="font-size: 7px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; border-top: 1px solid #ddd; padding-top: 1px;">
+                    <div style="font-size: 6.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; border-top: 1px solid #000; padding-top: 1px; margin-top: 1px; line-height: 1;">
                         ${box.binName}
                     </div>
                 `;
