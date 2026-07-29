@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Υπολογιστής Χαρτοκιβωτίων</title>
+    <title> Υπολογιστής Χαρτοκιβωτίων</title>
     <!-- Favicon Icon (📦) for browser tab -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
     <!-- Tailwind CSS for UI styling -->
@@ -300,8 +300,8 @@
     </div>
 
     <script>
-        // Exact Default Google Script URL
-        const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_9uSxN5ra8UNwCoZc1AwNQJEtQcYf_S1sfwPUa4ZXbFgxU4YtcE1l0zMw5u/exec';
+        // Exact Correct Active Google Script URL
+        const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_9oSxN5ra8UNwCoZclAwN0jEtQeYf_SlsfwPUa4zX0FGxU4YtcE11OzMW5ufmQ9e4/exec';
 
         // 37 Default Warehouse Boxes
         const DEFAULT_BINS = [
@@ -349,9 +349,9 @@
         let currentCalculation = null;
 
         window.onload = function() {
-            // Clean & sanitize saved URL from localStorage to prevent corrupted values
+            // Force replace stale/corrupted URL from localStorage with exact working DEFAULT_SCRIPT_URL
             let savedUrl = localStorage.getItem('boxApp_scriptUrl');
-            if (!savedUrl || !savedUrl.startsWith('http') || !savedUrl.includes('/exec') || savedUrl.length > 110) {
+            if (!savedUrl || savedUrl !== DEFAULT_SCRIPT_URL) {
                 savedUrl = DEFAULT_SCRIPT_URL;
                 localStorage.setItem('boxApp_scriptUrl', savedUrl);
             }
@@ -418,9 +418,6 @@
 
         function fetchGoogleProjects(customUrl = null) {
             let url = customUrl || document.getElementById('scriptUrl').value.trim() || DEFAULT_SCRIPT_URL;
-            if (!url || !url.startsWith('http') || url.length > 110) {
-                url = DEFAULT_SCRIPT_URL;
-            }
 
             document.getElementById('scriptUrl').value = url;
             localStorage.setItem('boxApp_scriptUrl', url);
@@ -451,7 +448,6 @@
                     showToast(`✅ Επιτυχής σύνδεση (${projects.length} Projects)!`);
                 })
                 .catch(err => {
-                    // Automatic fallback to DEFAULT_SCRIPT_URL if custom/saved URL failed
                     if (url !== DEFAULT_SCRIPT_URL) {
                         localStorage.setItem('boxApp_scriptUrl', DEFAULT_SCRIPT_URL);
                         fetchGoogleProjects(DEFAULT_SCRIPT_URL);
