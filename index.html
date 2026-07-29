@@ -123,9 +123,9 @@
                         <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
                             <span>🏢</span> Διαθέσιμα Κουτιά Αποθήκης
                         </h2>
-                        <span id="binCountBadge" class="text-xs font-bold bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full">37 κουτιά</span>
+                        <span id="binCountBadge" class="text-xs font-bold bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full">35 κουτιά</span>
                     </div>
-                    <p class="text-xs text-slate-500 mb-3">Προεπιλεγμένα τα 37 χαρτοκιβώτια της αποθήκης σας:</p>
+                    <p class="text-xs text-slate-500 mb-3">Προεπιλεγμένα τα 35 χαρτοκιβώτια της αποθήκης σας:</p>
                     
                     <div id="binsList" class="space-y-2 max-h-[340px] overflow-y-auto pr-1">
                         <!-- Bins will be rendered dynamically -->
@@ -607,7 +607,7 @@
                         </span>
                         <div>
                             <h4 class="text-xs font-bold text-slate-800">
-                                ${p.bin.name.replace(/κούτα|κουτί/gi, 'Συσκευασία')} 
+                                ${p.bin.name} 
                                 <span class="text-[10px] text-slate-400 font-normal">(${p.bin.l} x ${p.bin.w} x ${p.bin.h} cm)</span>
                             </h4>
                             <p class="text-[11px] text-slate-500">
@@ -638,10 +638,9 @@
                 btn.innerHTML = `<span>⏳</span> Αποστολή...`;
             }
 
-            // Format column K string
+            // Format column K string with original box names ("Κούτα"/"Κουτί")
             let columnKText = currentCalculation.packingPlan.map(p => {
-                const boxName = p.bin.name.replace(/κούτα|κουτί/gi, 'Συσκευασία');
-                return `${p.count}x ${boxName} (${p.itemsPerBox}τμχ/${p.weightPerBox}kg)`;
+                return `${p.count}x ${p.bin.name} (${p.itemsPerBox}τμχ/${p.weightPerBox}kg)`;
             }).join(' + ');
 
             const payload = {
