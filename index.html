@@ -17,14 +17,14 @@
 
         /* SCREEN STYLES FOR THERMAL LABELS MODAL */
         .thermal-label-preview {
-            width: 62mm;
-            height: 29mm;
+            width: 52mm;
+            height: 23mm;
             box-sizing: border-box;
             background: #ffffff;
             color: #000000;
             border: 1px solid #cbd5e1;
             border-radius: 4px;
-            padding: 2mm 3mm;
+            padding: 1.5mm 2.5mm;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -49,7 +49,7 @@
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
-            #appContainer, #toastNotification, .no-print {
+            #appContainer, #toastNotification, .no-print, #printModal {
                 display: none !important;
             }
             #printSection {
@@ -63,7 +63,7 @@
                 width: 62mm !important;
                 height: 29mm !important;
                 box-sizing: border-box !important;
-                padding: 1.5mm 3mm 1.5mm 3mm !important;
+                padding: 3mm 5mm !important;
                 display: flex !important;
                 flex-direction: column !important;
                 justify-content: space-between !important;
@@ -84,7 +84,7 @@
         <!-- HEADER -->
         <div class="text-center mb-6">
             <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 flex items-center justify-center gap-2">
-                <span>📦</span>Υπολογιστής Χαρτοκιβωτίων
+                <span>📦</span> Υπολογιστής Χαρτοκιβωτίων
             </h1>
             <p class="text-xs sm:text-sm text-slate-500 mt-1">
                 Αυτόματος υπολογισμός συσκευασίας (όριο <b>18 kg</b>), Google Sheets & Εκτύπωση Ετικετών.
@@ -304,7 +304,7 @@
         // Default Google Script URL
         const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_9uSxN5ra8UNwCoZc1AwNQJEtQcYf_S1sfwPUa4ZXbFgxU4YtcE1l0zMw5u/exec';
 
-        // 37 Default Boxes
+        // 37 Default Warehouse Boxes
         const DEFAULT_BINS = [
             { id: 1, name: "Κούτα 40x40x30", l: 40, w: 40, h: 30 },
             { id: 2, name: "Κούτα 40x30x40", l: 40, w: 30, h: 40 },
@@ -409,45 +409,60 @@
 
         function saveAndFetchProjects() {
             const url = document.getElementById('scriptUrl').value.trim();
-            if (!url) {
-                showToast("⚠️ Παρακαλώ εισάγετε το Web App URL.");
+            if (!url || !url.startsWith('http')) {
+                showToast("⚠️ Παρακαλώ εισάγετε έγκυρο Web App URL.");
                 return;
             }
             localStorage.setItem('boxApp_scriptUrl', url);
-            fetchGoogleProjects();
+            fetchGoogleProjects(false);
         }
 
-        function fetchGoogleProjects() {
-            const url = localStorage.getItem('boxApp_scriptUrl') || DEFAULT_SCRIPT_URL;
+        function fetchGoogleProjects(retryWithDefault = true) {
+            let url = document.getElementById('scriptUrl').value.trim();
+            if (!url || !url.startsWith('http')) {
+                url = DEFAULT_SCRIPT_URL;
+                document.getElementById('scriptUrl').value = url;
+                localStorage.setItem('boxApp_scriptUrl', url);
+            }
+
             const badge = document.getElementById('connectionBadge');
-            
             badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 animate-pulse";
             badge.innerHTML = "⏳ Φόρτωση Projects...";
 
-            // Append timestamp to avoid caching
             const fetchUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
 
             fetch(fetchUrl, { redirect: 'follow' })
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) throw new Error("HTTP " + res.status);
+                    return res.json();
+                })
                 .then(data => {
+                    let projects = [];
                     if (Array.isArray(data)) {
-                        googleProjects = data;
-                        populateProjectDropdown(data);
-                        badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800";
-                        badge.innerHTML = `🟢 Συνδέθηκε (${data.length} Projects)`;
-                        showToast("✅ Επιτυχής σύνδεση με το Google Sheet!");
+                        projects = data;
                     } else if (data && data.projects && Array.isArray(data.projects)) {
-                        googleProjects = data.projects;
-                        populateProjectDropdown(data.projects);
-                        badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800";
-                        badge.innerHTML = `🟢 Συνδέθηκε (${data.projects.length} Projects)`;
+                        projects = data.projects;
                     } else {
                         throw new Error("Invalid format");
                     }
+
+                    googleProjects = projects;
+                    populateProjectDropdown(projects);
+                    badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800";
+                    badge.innerHTML = `🟢 Συνδέθηκε (${projects.length} Projects)`;
+                    localStorage.setItem('boxApp_scriptUrl', url);
+                    showToast(`✅ Επιτυχής σύνδεση (${projects.length} Projects)!`);
                 })
                 .catch(err => {
-                    badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800";
-                    badge.innerHTML = "⚠️ Μη διαθέσιμο (Χειροκίνητη χρήση)";
+                    if (retryWithDefault && url !== DEFAULT_SCRIPT_URL) {
+                        // Fallback to DEFAULT_SCRIPT_URL if custom/saved URL fails
+                        document.getElementById('scriptUrl').value = DEFAULT_SCRIPT_URL;
+                        localStorage.setItem('boxApp_scriptUrl', DEFAULT_SCRIPT_URL);
+                        fetchGoogleProjects(false);
+                    } else {
+                        badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800";
+                        badge.innerHTML = "⚠️ Μη διαθέσιμο (Χειροκίνητη χρήση)";
+                    }
                 });
         }
 
@@ -671,36 +686,36 @@
                     const cleanBoxName = plan.bin.name.replace(/κούτα|κουτί/gi, 'Συσκευασία');
                     const labelHtml = `
                         <div class="thermal-label-preview">
-                            <div style="display: flex; justify-content: space-between; items-center; border-bottom: 1.5px solid #000; padding-bottom: 2px;">
-                                <div style="font-weight: 800; font-size: 10px; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #000; padding-bottom: 2px;">
+                                <div style="font-weight: 800; font-size: 9px; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">
                                     ATRION
                                 </div>
-                                <div style="font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: -0.2px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 140px;">
+                                <div style="font-weight: 800; font-size: 10.5px; text-transform: uppercase; letter-spacing: -0.2px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 120px;">
                                     ${currentCalculation.projectName}
                                 </div>
-                                <div style="font-weight: 800; font-size: 10px; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">
+                                <div style="font-weight: 800; font-size: 9px; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">
                                     ${labelIndex}/${currentCalculation.totalBoxesCount}
                                 </div>
                             </div>
 
-                            <div style="display: flex; gap: 4px; margin: 3px 0;">
-                                <div style="flex: 1; border: 1.5px solid #000; border-radius: 3px; padding: 2px; text-align: center;">
-                                    <div style="font-size: 7px; font-weight: 700; text-transform: uppercase;">ΠΟΣΟΤΗΤΑ</div>
+                            <div style="display: flex; gap: 4px; margin: 2.5px 0;">
+                                <div style="flex: 1; border: 1.5px solid #000; border-radius: 3px; padding: 1.5px; text-align: center;">
+                                    <div style="font-size: 6.5px; font-weight: 700; text-transform: uppercase;">ΠΟΣΟΤΗΤΑ</div>
                                     <div style="font-size: 13.5px; font-weight: 900; line-height: 1.1;">
-                                        ${plan.itemsPerBox} <span style="font-size: 8px; font-weight: 600;">τμχ</span>
+                                        ${plan.itemsPerBox} <span style="font-size: 7.5px; font-weight: 600;">τμχ</span>
                                     </div>
                                 </div>
-                                <div style="flex: 1; border: 1.5px solid #000; border-radius: 3px; padding: 2px; text-align: center;">
-                                    <div style="font-size: 7px; font-weight: 700; text-transform: uppercase;">ΒΑΡΟΣ</div>
-                                    <div style="font-size: 12px; font-weight: 900; line-height: 1.1;">
-                                        ${plan.weightPerBox} <span style="font-size: 8px; font-weight: 600;">kg</span>
+                                <div style="flex: 1; border: 1.5px solid #000; border-radius: 3px; padding: 1.5px; text-align: center;">
+                                    <div style="font-size: 6.5px; font-weight: 700; text-transform: uppercase;">ΒΑΡΟΣ</div>
+                                    <div style="font-size: 11.5px; font-weight: 900; line-height: 1.1;">
+                                        ${plan.weightPerBox} <span style="font-size: 7.5px; font-weight: 600;">kg</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <div style="display: flex; justify-content: space-between; items-center; font-size: 8px; font-weight: 700; border-top: 1px solid #000; padding-top: 2px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 7.5px; font-weight: 700; border-top: 1px solid #000; padding-top: 1.5px;">
                                 <div>📦 ${cleanBoxName}</div>
-                                <div style="font-size: 7px; color: #444;">${todayStr}</div>
+                                <div style="font-size: 6.5px; color: #444;">${todayStr}</div>
                             </div>
                         </div>
                     `;
@@ -734,7 +749,7 @@
                                 <div style="font-weight: 800; font-size: 9px; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">
                                     ATRION
                                 </div>
-                                <div style="font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: -0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;">
+                                <div style="font-weight: 800; font-size: 10.5px; text-transform: uppercase; letter-spacing: -0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">
                                     ${currentCalculation.projectName}
                                 </div>
                                 <div style="font-weight: 800; font-size: 9px; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">
@@ -744,22 +759,22 @@
 
                             <div style="display: flex; gap: 4px; margin: 2px 0;">
                                 <div style="flex: 1; border: 1.5px solid #000; border-radius: 3px; padding: 1.5px; text-align: center;">
-                                    <div style="font-size: 7px; font-weight: 700; text-transform: uppercase;">ΠΟΣΟΤΗΤΑ</div>
+                                    <div style="font-size: 6.5px; font-weight: 700; text-transform: uppercase;">ΠΟΣΟΤΗΤΑ</div>
                                     <div style="font-size: 13.5px; font-weight: 900; line-height: 1.1;">
-                                        ${plan.itemsPerBox} <span style="font-size: 8px; font-weight: 600;">τμχ</span>
+                                        ${plan.itemsPerBox} <span style="font-size: 7.5px; font-weight: 600;">τμχ</span>
                                     </div>
                                 </div>
                                 <div style="flex: 1; border: 1.5px solid #000; border-radius: 3px; padding: 1.5px; text-align: center;">
-                                    <div style="font-size: 7px; font-weight: 700; text-transform: uppercase;">ΒΑΡΟΣ</div>
-                                    <div style="font-size: 12px; font-weight: 900; line-height: 1.1;">
-                                        ${plan.weightPerBox} <span style="font-size: 8px; font-weight: 600;">kg</span>
+                                    <div style="font-size: 6.5px; font-weight: 700; text-transform: uppercase;">ΒΑΡΟΣ</div>
+                                    <div style="font-size: 11.5px; font-weight: 900; line-height: 1.1;">
+                                        ${plan.weightPerBox} <span style="font-size: 7.5px; font-weight: 600;">kg</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 8px; font-weight: 700; border-top: 1px solid #000; padding-top: 1.5px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 7.5px; font-weight: 700; border-top: 1px solid #000; padding-top: 1.5px;">
                                 <div>📦 ${cleanBoxName}</div>
-                                <div style="font-size: 7px; color: #444;">${todayStr}</div>
+                                <div style="font-size: 6.5px; color: #444;">${todayStr}</div>
                             </div>
                         </div>
                     `;
