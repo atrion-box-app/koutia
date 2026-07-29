@@ -46,6 +46,8 @@
                 margin: 0 !important;
                 padding: 0 !important;
                 background: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             .thermal-label {
                 width: 62mm !important;
@@ -243,10 +245,10 @@
             </div>
         </div>
 
-        <!-- ΚΡΥΦΗ ΠΕΡΙΟΧΗ ΓΙΑ DIRECT PRINTING -->
-        <div id="printSection" class="hidden"></div>
-
     </div>
+
+    <!-- ΚΡΥΦΗ ΠΕΡΙΟΧΗ ΓΙΑ DIRECT PRINTING (Εξωτερικά από το main container) -->
+    <div id="printSection" class="hidden"></div>
 
     <script>
         // Τα 37 Χαρτοκιβώτια Αποθήκης
@@ -291,7 +293,7 @@
         ];
 
         let fetchedProjects = [];
-        let currentCalculatedBoxes = []; // Αποθηκεύει τα επιμέρους κουτιά για τις ετικέτες
+        let currentCalculatedBoxes = [];
 
         window.onload = function() {
             renderBinsList();
@@ -607,7 +609,7 @@
                         ${breakdownHtml}
                     </div>
 
-                    <!-- ΑΠΟΣΤΟΛΗ ΣΤΟ GOOGLE SHEET & ΕΚΤΥΠΩΣΗ ΕΤΙΚΕΤΩΝ -->
+                    <!-- ΑΠΟΣТОΛΗ ΣΤΟ GOOGLE SHEET & ΕΚΤΥΠΩΣΗ ΕΤΙΚΕΤΩΝ -->
                     <div class="pt-2 flex flex-col sm:flex-row gap-3">
                         <button onclick="sendDirectToSheet()" id="sendSheetBtn" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-blue-700 transition flex items-center justify-center gap-2 cursor-pointer shadow-sm">
                             <span>🚀</span> Αποστολή στο Google Sheet
@@ -640,7 +642,7 @@
             }
             
             const manualName = document.getElementById('manualProjectName').value.trim();
-            return manualName || "ΓΕΝΙΚΗ ΑΠΟΣΤΟΛΗ";
+            return manualName || "ΓΕΝΙΚΗ ΑΠΟΣТОΛΗ";
         }
 
         function openLabelsModal() {
@@ -710,7 +712,7 @@
                         </div>
                     </div>
 
-                    <div style="margin: 1mm 0; background: #f0f0f0; padding: 2px 4px; border-radius: 3px; border: 1px solid #000; display: flex; justify-content: space-around; align-items: center; height: 9.5mm;">
+                    <div style="margin: 1mm 0; background: #f0f0f0; padding: 2px 4px; border-radius: 3px; border: 1px solid #000; display: flex; justify-around: space-around; align-items: center; height: 9.5mm;">
                         <div style="text-align: center;">
                             <div style="font-size: 6.5px; font-weight: bold; text-transform: uppercase; line-height: 1;">ΠΟΣΟΤΗΤΑ</div>
                             <div style="font-size: 15px; font-weight: 900; line-height: 1.1;">${box.qty} <span style="font-size: 8.5px; font-weight: normal;">τμχ</span></div>
