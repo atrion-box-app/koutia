@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Υπολογιστής Χαρτοκιβωτίων</title>
+    <title>Υπολογιστής Χαρτοκιβωτίων</title>
     <!-- Favicon Icon (📦) for browser tab -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
     <!-- Tailwind CSS for UI styling -->
@@ -299,11 +299,12 @@
         <span id="toastMessage"></span>
     </div>
 
+    <!-- JAVASCRIPT LOGIC -->
     <script>
         // Exact Correct Active Google Script URL
         const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_9oSxN5ra8UNwCoZclAwN0jEtQeYf_SlsfwPUa4zX0FGxU4YtcE11OzMW5ufmQ9e4/exec';
 
-        // 37 Default Warehouse Boxes
+        // 35 Default Warehouse Boxes
         const DEFAULT_BINS = [
             { id: 1, name: "Κούτα 40x40x30", l: 40, w: 40, h: 30 },
             { id: 2, name: "Κούτα 40x30x40", l: 40, w: 30, h: 40 },
@@ -314,9 +315,7 @@
             { id: 7, name: "Κούτα 35x25x15", l: 35, w: 25, h: 15 },
             { id: 8, name: "Κούτα 30x30x30", l: 30, w: 30, h: 30 },
             { id: 9, name: "Κούτα 30x30x20", l: 30, w: 30, h: 20 },
-            { id: 10, name: "Κούτα 30x25x20", l: 30, w: 25, h: 20 },
             { id: 11, name: "Κούτα 30x25x15", l: 30, w: 25, h: 15 },
-            { id: 12, name: "Κούτα 30x20x20", l: 30, w: 20, h: 20 },
             { id: 13, name: "Κούτα 30x20x15", l: 30, w: 20, h: 15 },
             { id: 14, name: "Κούτα 25x25x25", l: 25, w: 25, h: 25 },
             { id: 15, name: "Κούτα 25x25x15", l: 25, w: 25, h: 15 },
@@ -583,6 +582,9 @@
             };
 
             renderResultsUI();
+
+            // Automatically send data to Google Sheet immediately after calculation!
+            sendDataToSheet();
         }
 
         function renderResultsUI() {
@@ -631,8 +633,10 @@
             const btn = document.getElementById('sendToSheetBtn');
             const projectIndex = document.getElementById('projectSelect').value;
 
-            btn.disabled = true;
-            btn.innerHTML = `<span>⏳</span> Αποστολή...`;
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span>⏳</span> Αποστολή...`;
+            }
 
             // Format column K string
             let columnKText = currentCalculation.packingPlan.map(p => {
@@ -649,18 +653,22 @@
             fetch(url, {
                 method: 'POST',
                 mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify(payload)
             })
             .then(() => {
                 showToast("✅ Επιτυχής ενημέρωση στο Google Sheet!");
-                btn.disabled = false;
-                btn.innerHTML = `<span>🚀</span> Αποστολή στο Google Sheet`;
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<span>🚀</span> Αποστολή στο Google Sheet`;
+                }
             })
             .catch(() => {
                 showToast("✅ Η εντολή στάλθηκε στο Google Sheet!");
-                btn.disabled = false;
-                btn.innerHTML = `<span>🚀</span> Αποστολή στο Google Sheet`;
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<span>🚀</span> Αποστολή στο Google Sheet`;
+                }
             });
         }
 
