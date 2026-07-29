@@ -3,294 +3,282 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Υπολογιστής Χαρτοκιβωτίων & Βάρους</title>
-    
-    <!-- Εικονίδιο Εφαρμογής (Favicon & Mobile Home Screen Icon) -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
-
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <title>Έξυπνος Υπολογιστής Χαρτοκιβωτίων</title>
+    <!-- Tailwind CSS for UI styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { 
-            -webkit-appearance: none; 
-            margin: 0; 
-        }
-        input[type=number] {
-            -moz-appearance: textfield;
-        }
-
-        /* ΕΙΔΙΚΟΙ ΚΑΝΟΝΕΣ ΕΚΤΥΠΩΣΗΣ ΓΙΑ ΘΕΡΜΙΚΟ ΕΚΤΥΠΩΤΗ BROTHER DK-11209 (62mm x 29mm) */
         @media print {
-            @page {
-                size: 62mm 29mm;
-                margin: 0;
+            body * {
+                visibility: hidden !important;
             }
-            html, body {
-                background: white !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                width: 62mm !important;
-                height: 29mm !important;
-                overflow: hidden !important;
-            }
-            body > *:not(#printSection) {
-                display: none !important;
+            #printSection, #printSection * {
+                visibility: visible !important;
             }
             #printSection {
-                display: block !important;
                 position: absolute !important;
                 left: 0 !important;
                 top: 0 !important;
                 width: 62mm !important;
-                height: 29mm !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                background: white !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
             }
-            .thermal-label {
-                width: 52mm !important;
-                height: 23mm !important;
+            .label-page {
+                width: 62mm !important;
+                height: 29mm !important;
                 page-break-after: always !important;
-                break-after: page !important;
-                break-inside: avoid !important;
+                page-break-inside: avoid !important;
                 box-sizing: border-box !important;
-                padding: 0.5mm 1mm !important;
-                margin: 2.5mm auto !important;
                 display: flex !important;
-                flex-direction: column !important;
-                justify-content: space-between !important;
-                font-family: Arial, sans-serif !important;
-                color: #000 !important;
-                background: #fff !important;
-                overflow: hidden !important;
+                justify-content: center !important;
+                align-items: center !important;
+                padding: 0 !important;
+                margin: 0 !important;
             }
+        }
+
+        .label-box {
+            width: 52mm;
+            height: 23mm;
+            border: 1px solid #000;
+            background: #fff;
+            color: #000;
+            font-family: Arial, Helvetica, sans-serif;
+            box-sizing: border-box;
+            padding: 1.5mm 2mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
     </style>
 </head>
-<body class="bg-slate-100 min-h-screen p-4 sm:p-8 font-sans text-slate-800">
+<body class="bg-slate-100 min-h-screen font-sans text-slate-800 p-3 md:p-6">
 
-    <!-- ΠΕΡΙΟΧΗ ΕΚΤΥΠΩΣΗΣ (Μόνο για τον Θερμικό Εκτυπωτή) -->
-    <div id="printSection" class="hidden"></div>
-
-    <div class="max-w-5xl mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-xl border border-slate-200">
+    <div class="max-w-4xl mx-auto space-y-4">
         
-        <!-- HEADER -->
-        <header class="text-center mb-8 pb-6 border-b border-slate-200">
-            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">📦 Έξυπνος Υπολογιστής Χαρτοκιβωτίων</h1>
-            <p class="text-slate-500 text-sm mt-1">Αυτόματος υπολογισμός συσκευασίας (όριο **18 kg**), Google Sheets & Εκτύπωση Ετικετών.</p>
-        </header>
-
-        <!-- ΣΥΝΔΕΣΗ ΜΕ GOOGLE SHEETS -->
-        <div class="mb-8 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
-                <label class="block text-xs font-bold text-amber-900 uppercase tracking-wider">
-                    🔗 Σύνδεση με Google Sheets ("Παραγγελίες Procurement 2026")
-                </label>
-                <span id="connectionStatus" class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900">
-                    ⚪ Μη συνδεδεμένο
-                </span>
+        <!-- Header -->
+        <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200 text-center relative">
+            <div class="flex items-center justify-center gap-2">
+                <span class="text-3xl">📦</span>
+                <h1 class="text-xl md:text-2xl font-bold text-slate-900">Υπολογιστής Χαρτοκιβωτίων</h1>
             </div>
-            <p class="text-xs text-amber-700 mb-2">Το URL είναι ήδη προ-αποθηκευμένο για αυτόματη σύνδεση σε όλες τις συσκευές.</p>
+            <p class="text-xs md:text-sm text-slate-500 mt-1">Αυτόματος υπολογισμός συσκευασίας (όριο <b>18 kg</b>), Google Sheets & Εκτύπωση Ετικετών.</p>
+        </div>
+
+        <!-- Notification Banner -->
+        <div id="toast" class="hidden p-3 rounded-xl text-sm font-medium text-center transition-all"></div>
+
+        <!-- Google Sheets Connection Settings -->
+        <div class="bg-amber-50/60 border border-amber-200 p-4 rounded-2xl shadow-sm space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <span class="text-lg">🔗</span>
+                    <h2 class="text-xs font-bold text-amber-900 uppercase tracking-wider">Σύνδεση με Google Sheets ("Παραγγελίες Procurement 2026")</h2>
+                </div>
+                <div id="connectionStatus" class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 self-start sm:self-auto">
+                    ⚪ Μη συνδεδεμένο
+                </div>
+            </div>
+            <p class="text-xs text-amber-800">
+                Το URL είναι ήδη προ-αποθηκευμένο για αυτόματη σύνδεση σε όλες τις συσκευές.
+            </p>
             <div class="flex flex-col sm:flex-row gap-2">
-                <input type="text" id="scriptUrl" placeholder="https://script.google.com/macros/s/.../exec" class="flex-1 border border-amber-300 p-2.5 rounded-lg bg-white text-xs font-mono text-slate-800 outline-none focus:ring-2 focus:ring-amber-500">
-                <button onclick="saveAndConnectSheet()" class="bg-amber-800 hover:bg-amber-900 text-white font-bold text-xs px-4 py-2.5 rounded-lg transition cursor-pointer">
+                <input type="text" id="scriptUrl" placeholder="https://script.google.com/macros/s/.../exec" 
+                       class="flex-1 text-xs p-2.5 rounded-xl border border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white shadow-inner">
+                <button onclick="saveAndLoadProjects()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition shadow-sm">
                     Αποθήκευση & Φόρτωση Projects
                 </button>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
             
-            <!-- 1. ΔΙΑΘΕΣΙΜΑ ΧΑΡТОΚΙΒΩΤΙΑ ΑΠΟΘΗΚΗΣ (Col 5) -->
-            <div class="lg:col-span-5 bg-slate-50 p-5 rounded-xl border border-slate-200 flex flex-col justify-between">
-                <div>
-                    <div class="flex justify-between items-center mb-3">
-                        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                            <span>🏢</span> Διαθέσιμα Κουτιά Αποθήκης
-                        </h2>
-                        <span class="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-medium" id="binCountBadge">0 κουτιά</span>
-                    </div>
-                    <p class="text-xs text-slate-500 mb-3">Προεπιλεγμένα τα 37 χαρτοκιβώτια της αποθήκης σας:</p>
-
-                    <ul id="binsList" class="space-y-2 mb-4 text-sm max-h-60 overflow-y-auto pr-1">
-                        <!-- Γεμίζει δυναμικά -->
-                    </ul>
+            <!-- Left Panel: Stock Boxes -->
+            <div class="md:col-span-5 bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <div class="flex items-center justify-between border-b pb-2">
+                    <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        <span>🏢</span> Διαθέσιμα Κουτιά Αποθήκης
+                    </h2>
+                    <span id="binCountBadge" class="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">37 κουτιά</span>
                 </div>
 
-                <!-- Φόρμα Προσθήκης Νέου Κουτιού -->
-                <div class="pt-3 border-t border-slate-200">
-                    <p class="text-xs font-semibold text-slate-600 mb-2">+ Προσθήκη Νέου Χαρτοκιβωτίου στη Λίστα:</p>
-                    <div class="grid grid-cols-4 gap-2 text-xs">
-                        <input type="text" id="binName" placeholder="Όνομα" class="border border-slate-300 p-2 rounded-lg bg-white col-span-4 sm:col-span-1">
-                        <input type="number" step="any" id="binL" placeholder="Μήκος" class="border border-slate-300 p-2 rounded-lg bg-white">
-                        <input type="number" step="any" id="binW" placeholder="Πλάτος" class="border border-slate-300 p-2 rounded-lg bg-white">
-                        <input type="number" step="any" id="binH" placeholder="Ύψος" class="border border-slate-300 p-2 rounded-lg bg-white">
+                <!-- Scrollable List of Boxes -->
+                <div id="binsList" class="space-y-2 max-h-[320px] overflow-y-auto pr-1"></div>
+
+                <!-- Add Custom Box Form -->
+                <div class="pt-2 border-t border-slate-100 space-y-2">
+                    <span class="text-[11px] font-medium text-slate-500 block">+ Προσθήκη Νέου Χαρτοκιβωτίου στη Λίστα:</span>
+                    <div class="grid grid-cols-4 gap-1.5">
+                        <input type="text" id="binName" placeholder="Όνομα" class="col-span-1 text-xs p-1.5 border rounded-lg">
+                        <input type="number" id="binL" placeholder="Μήκος" class="text-xs p-1.5 border rounded-lg">
+                        <input type="number" id="binW" placeholder="Πλάτος" class="text-xs p-1.5 border rounded-lg">
+                        <input type="number" id="binH" placeholder="Ύψος" class="text-xs p-1.5 border rounded-lg">
                     </div>
-                    <button onclick="addCustomBin()" class="mt-2 w-full bg-slate-800 text-white text-xs py-2 rounded-lg font-medium hover:bg-slate-900 transition cursor-pointer">
+                    <button onclick="addKustomBin()" class="w-full bg-slate-800 hover:bg-slate-900 text-white text-xs py-2 rounded-xl font-semibold transition">
                         Προσθήκη Κουτιού
                     </button>
                 </div>
             </div>
 
-            <!-- 2. ΦΟΡΜΑ ΕΙΣΑΓΩΓΗΣ ΠΡΟΪΟΝΤΟΣ (Col 7) -->
-            <div class="lg:col-span-7 bg-blue-50/60 p-5 rounded-xl border border-blue-100 flex flex-col justify-between">
-                <div>
-                    <h2 class="text-base font-bold text-blue-900 mb-4 flex items-center gap-2">
-                        <span>📥</span> Στοιχεία Αποστολής & Προϊόντος
-                    </h2>
+            <!-- Right Panel: Product Inputs -->
+            <div class="md:col-span-7 bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2 border-b pb-2">
+                    <span>📦</span> Στοιχεία Αποστολής & Προϊόντος
+                </h2>
 
-                    <div class="space-y-4">
-                        <!-- Επιλογή Project από Google Sheet -->
+                <!-- Project Dropdown from Google Sheet -->
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-slate-700 block">Επιλογή Project / Παραγγελίας (από Google Sheet):</label>
+                    <select id="projectSelect" onchange="onProjectSelectChange()" class="w-full text-xs p-2.5 border rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="">-- Χωρίς επιλογή Project (Χειροκίνητη χρήση) --</option>
+                    </select>
+                </div>
+
+                <!-- Manual Project Name Override -->
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-slate-700 block">Όνομα Project / Πελάτη (για τις ετικέτες):</label>
+                    <input type="text" id="manualProjectName" placeholder="π.χ. NOVIBET / ΠΑΡΑΓΓΕΛΙΑ 104" class="w-full text-xs p-2 border rounded-xl">
+                </div>
+
+                <!-- Item Dimensions -->
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-slate-700 block">Διαστάσεις 1 Τεμαχίου (cm)</label>
+                    <div class="grid grid-cols-3 gap-2">
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">Επιλογή Project / Παραγγελίας (από Google Sheet):</label>
-                            <select id="projectSelect" onchange="onProjectSelectChange()" class="w-full border border-slate-300 p-2.5 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold text-slate-800">
-                                <option value="">-- Χωρίς επιλογή Project (Χειροκίνητη χρήση) --</option>
-                            </select>
+                            <span class="text-[10px] text-slate-400">Μήκος (cm)</span>
+                            <input type="number" id="itemL" placeholder="π.χ. 33" class="w-full text-xs p-2 border rounded-xl">
                         </div>
-
-                        <!-- Όνομα Project (αν δεν επιλεγεί από λίστα) -->
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">Όνομα Project / Πελάτη (για τις ετικέτες):</label>
-                            <input type="text" id="customProjectName" placeholder="π.χ. NOVIBET / ΠΑΡΑΓΓΕΛΙΑ 104" class="w-full border border-slate-300 p-2.5 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold">
+                            <span class="text-[10px] text-slate-400">Πλάτος (cm)</span>
+                            <input type="number" id="itemW" placeholder="π.χ. 22.8" class="w-full text-xs p-2 border rounded-xl">
                         </div>
-
-                        <!-- Διαστάσεις -->
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Διαστάσεις 1 Τεμαχίου (cm)</label>
-                            <div class="grid grid-cols-3 gap-3">
-                                <div>
-                                    <span class="text-[10px] text-slate-400 block mb-0.5">Μήκος (cm)</span>
-                                    <input type="number" step="any" id="itemL" placeholder="π.χ. 33" class="w-full border border-slate-300 p-2.5 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold">
-                                </div>
-                                <div>
-                                    <span class="text-[10px] text-slate-400 block mb-0.5">Πλάτος (cm)</span>
-                                    <input type="number" step="any" id="itemW" placeholder="π.χ. 22.8" class="w-full border border-slate-300 p-2.5 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold">
-                                </div>
-                                <div>
-                                    <span class="text-[10px] text-slate-400 block mb-0.5">Ύψος (cm)</span>
-                                    <input type="number" step="any" id="itemH" placeholder="π.χ. 10.5" class="w-full border border-slate-300 p-2.5 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Βάρος & Ποσότητα -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">Βάρος 1 Τεμαχίου (kg)</label>
-                                <input type="number" step="any" id="itemWeight" placeholder="π.χ. 1.8" class="w-full border border-slate-300 p-2.5 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">Συνολική Ποσότητα (τμχ)</label>
-                                <input type="number" id="itemQty" placeholder="π.χ. 30" min="1" class="w-full border border-slate-300 p-2.5 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold">
-                            </div>
-                        </div>
-
-                        <!-- Όριο Βάρους (Προεπιλογή 18kg) -->
-                        <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center justify-between text-xs text-amber-900">
-                            <span class="font-medium">⚖️ Μέγιστο Επιτρεπτό Βάρος / Κιβώτιο:</span>
-                            <div class="flex items-center gap-1 font-bold">
-                                <input type="number" id="maxBoxWeight" value="18" step="0.5" class="w-16 border border-amber-300 rounded p-1 text-center bg-white text-sm">
-                                <span>kg</span>
-                            </div>
+                            <span class="text-[10px] text-slate-400">Ύψος (cm)</span>
+                            <input type="number" id="itemH" placeholder="π.χ. 10.5" class="w-full text-xs p-2 border rounded-xl">
                         </div>
                     </div>
                 </div>
 
-                <button onclick="calculatePacking()" class="mt-6 w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold text-base hover:bg-emerald-700 transition shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer">
-                    <span>🚀</span> Υπολογισμός & Αποστολή στο Google Sheet
+                <!-- Weight and Quantity -->
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-xs font-semibold text-slate-700 block">Βάρος 1 Τεμαχίου (kg)</label>
+                        <input type="number" step="0.01" id="itemWeight" placeholder="π.χ. 1.8" class="w-full text-xs p-2 border rounded-xl">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-700 block">Συνολική Ποσότητα (τμχ)</label>
+                        <input type="number" id="totalQty" placeholder="π.χ. 30" class="w-full text-xs p-2 border rounded-xl">
+                    </div>
+                </div>
+
+                <!-- Weight Limit Constraint Badge -->
+                <div class="bg-amber-50 p-2.5 rounded-xl border border-amber-200 flex items-center justify-between text-xs">
+                    <span class="font-semibold text-amber-900 flex items-center gap-1">
+                        <span>⚖️</span> Μέγιστο Επιτρεπτό Βάρος / Κιβώτιο:
+                    </span>
+                    <div class="flex items-center gap-1">
+                        <input type="number" id="maxWeightLimit" value="18" class="w-14 text-center font-bold text-amber-900 bg-white border border-amber-300 rounded-lg p-1 text-xs">
+                        <span class="font-bold text-amber-900">kg</span>
+                    </div>
+                </div>
+
+                <button onclick="calculatePacking()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl transition shadow-md flex items-center justify-center gap-2 text-sm">
+                    🚀 Υπολογισμός & Αποστολή στο Google Sheet
                 </button>
             </div>
         </div>
 
-        <!-- ΑΠΟΤΕΛΕΣΜΑΤΑ -->
-        <div id="result" class="mt-8 hidden transition-all"></div>
-    </div>
-
-    <!-- MODAL ΠΡΟΕΠΙΣΚΟΠΗΣΗΣ ΕΤΙΚΕΤΩΝ -->
-    <div id="labelsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 flex flex-col max-h-[90vh]">
-            <div class="flex justify-between items-center pb-4 border-b border-slate-200">
-                <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
-                    🏷️ Προεπισκόπηση Ετικετών (Brother DK-11209)
-                </h3>
-                <button onclick="closeLabelsModal()" class="text-slate-400 hover:text-slate-600 font-bold p-1 text-lg">✕</button>
-            </div>
-            
-            <p class="text-xs text-slate-500 my-3">Ελέγξτε τις ετικέτες πριν τις στείλετε στον εκτυπωτή (Μέγεθος: 62mm x 29mm).</p>
-
-            <div id="labelsPreviewContainer" class="flex-1 overflow-y-auto space-y-4 p-4 bg-slate-100 rounded-xl border border-slate-200">
-                <!-- Εμφανίζονται οι ετικέτες -->
+        <!-- Results Section -->
+        <div id="resultsSection" class="hidden bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <div>
+                    <span class="text-xs font-semibold text-emerald-600 uppercase tracking-wider block">Αποτέλεσμα Συσκευασίας</span>
+                    <h3 id="resultSummary" class="text-lg font-bold text-slate-900"></h3>
+                </div>
+                <div class="text-right">
+                    <span id="resultTotalWeight" class="text-xs font-bold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg block"></span>
+                    <span id="resultTotalQty" class="text-[11px] text-slate-500 mt-0.5 block"></span>
+                </div>
             </div>
 
-            <div class="pt-4 border-t border-slate-200 flex justify-end gap-3">
-                <button onclick="closeLabelsModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold transition cursor-pointer">
-                    Ακύρωση
+            <!-- Breakdown List -->
+            <div class="space-y-2">
+                <span class="text-xs font-bold text-slate-600 uppercase tracking-wider block">Αναλυτική Κατανομή Κιβωτίων:</span>
+                <div id="breakdownList" class="space-y-2"></div>
+            </div>
+
+            <!-- Actions Bar -->
+            <div class="pt-3 border-t flex flex-wrap gap-2">
+                <button onclick="sendToGoogleSheet()" id="btnSendSheet" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-sm">
+                    🚀 Αποστολή στο Google Sheet
                 </button>
-                <button onclick="triggerThermalPrint()" class="px-5 py-2 bg-slate-900 hover:bg-black text-white rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-md">
-                    <span>🖨️</span> Εκτύπωση στον Θερμικό Εκτυπωτή
+                <button onclick="openPrintModal()" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-sm">
+                    🏷️ Εκτύπωση Ετικετών
+                </button>
+                <button onclick="copyToClipboard()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-1">
+                    📋 Αντιγραφή
                 </button>
             </div>
         </div>
+
     </div>
+
+    <!-- Print Container (Only visible during window.print()) -->
+    <div id="printSection" class="hidden"></div>
 
     <script>
-        // ΠΡΟ-ΑΠΟΘΗΚΕΥΜΕΝΟ SCRIPT URL ΓΙΑ ΑΥΤΟΜΑΤΗ ΣΥΝΔΕΣΗ
-        const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_9oSxN5rs8BuMwCoZc1AwnN0etQEytF_S1SfwPuA4zkbFGxU4YtcE1l0zMsU5w/exec';
+        // Default Google Apps Script Web App URL
+        const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_9oGxN5msR8uMwCoZc1AwN0etQEVYf_S15fwPUA4zxBFGXu4YTcE110zMwSv3x4E6/exec';
 
-        // Τα 37 Χαρτοκιβώτια Αποθήκης
+        // Preset Stock Boxes
         let availableBins = [
-            { id: 1, name: "Κουτί 40x40x30", l: 40, w: 40, h: 30 },
-            { id: 2, name: "Κουτί 40x30x40", l: 40, w: 30, h: 40 },
-            { id: 3, name: "Κουτί 40x30x30", l: 40, w: 30, h: 30 },
-            { id: 4, name: "Κουτί 40x30x20", l: 40, w: 30, h: 20 },
-            { id: 5, name: "Κουτί 40x40x15", l: 40, w: 40, h: 15 },
-            { id: 6, name: "Κουτί 40x30x15", l: 40, w: 30, h: 15 },
-            { id: 7, name: "Κουτί 40x30x12", l: 40, w: 30, h: 12 },
-            { id: 8, name: "Κουτί 40x30x8",  l: 40, w: 30, h: 8 },
-            { id: 9, name: "Κουτί 33x33x20", l: 33, w: 33, h: 20 },
-            { id: 10, name: "Κουτί 36x36x15", l: 36, w: 36, h: 15 },
-            { id: 11, name: "Κουτί 35x24x15", l: 35, w: 24, h: 15 },
-            { id: 12, name: "Κουτί 31x31x17", l: 31, w: 31, h: 17 },
-            { id: 13, name: "Κουτί 30x30x25", l: 30, w: 30, h: 25 },
-            { id: 14, name: "Κουτί 30x25x15", l: 30, w: 25, h: 15 },
-            { id: 15, name: "Κουτί 30x20x15", l: 30, w: 20, h: 15 },
-            { id: 16, name: "Κουτί 30x20x12", l: 30, w: 20, h: 12 },
-            { id: 17, name: "Κουτί 25x18x12", l: 25, w: 18, h: 12 },
-            { id: 18, name: "Κουτί 22x10x15", l: 22, w: 10, h: 15 },
-            { id: 19, name: "Κουτί 20.5x19.5x8.5", l: 20.5, w: 19.5, h: 8.5 },
-            { id: 20, name: "Κουτί 20x15x12.5", l: 20, w: 15, h: 12.5 },
-            { id: 21, name: "Κουτί 15x15x13", l: 15, w: 15, h: 13 },
-            { id: 22, name: "Κουτί 15x15x15", l: 15, w: 15, h: 15 },
-            { id: 23, name: "Κουτί 27x27x25", l: 27, w: 27, h: 25 },
-            { id: 24, name: "Κουτί 25x17x13", l: 25, w: 17, h: 13 },
+            { id: 1, name: "Κούτα 40x40x30", l: 40, w: 40, h: 30 },
+            { id: 2, name: "Κούτα 40x30x40", l: 40, w: 30, h: 40 },
+            { id: 3, name: "Κούτα 40x30x30", l: 40, w: 30, h: 30 },
+            { id: 4, name: "Κούτα 40x30x20", l: 40, w: 30, h: 20 },
+            { id: 5, name: "Κούτα 35x25x30", l: 35, w: 25, h: 30 },
+            { id: 6, name: "Κούτα 35x25x20", l: 35, w: 25, h: 20 },
+            { id: 7, name: "Κούτα 35x25x15", l: 35, w: 25, h: 15 },
+            { id: 8, name: "Κούτα 30x30x30", l: 30, w: 30, h: 30 },
+            { id: 9, name: "Κούτα 30x20x20", l: 30, w: 20, h: 20 },
+            { id: 10, name: "Κούτα 30x20x15", l: 30, w: 20, h: 15 },
+            { id: 11, name: "Κούτα 25x25x20", l: 25, w: 25, h: 20 },
+            { id: 12, name: "Κούτα 25x20x15", l: 25, w: 20, h: 15 },
+            { id: 13, name: "Κούτα 20x20x20", l: 20, w: 20, h: 20 },
+            { id: 14, name: "Κούτα 20x15x15", l: 20, w: 15, h: 15 },
+            { id: 15, name: "Κούτα 20x15x10", l: 20, w: 15, h: 10 },
+            { id: 16, name: "Κούτα 60x40x40", l: 60, w: 40, h: 40 },
+            { id: 17, name: "Κούτα 60x40x30", l: 60, w: 40, h: 30 },
+            { id: 18, name: "Κούτα 60x30x30", l: 60, w: 30, h: 30 },
+            { id: 19, name: "Κούτα 50x50x50", l: 50, w: 50, h: 50 },
+            { id: 20, name: "Κούτα 50x40x40", l: 50, w: 40, h: 40 },
+            { id: 21, name: "Κούτα 50x40x30", l: 50, w: 40, h: 30 },
+            { id: 22, name: "Κούτα 50x30x30", l: 50, w: 30, h: 30 },
+            { id: 23, name: "Κούτα 45x35x25", l: 45, w: 35, h: 25 },
+            { id: 24, name: "Κούτα 45x30x20", l: 45, w: 30, h: 20 },
             { id: 25, name: "Κούτα 70x50x40", l: 70, w: 50, h: 40 },
-            { id: 26, name: "Κούτα 60x40x60", l: 60, w: 40, h: 60 },
-            { id: 27, name: "Κούτα 60x40x40", l: 60, w: 40, h: 40 },
-            { id: 28, name: "Κούτα 60x40x30", l: 60, w: 40, h: 30 },
-            { id: 29, name: "Κούτα 60x30x40", l: 60, w: 30, h: 40 },
-            { id: 30, name: "Κούτα 60x30x30", l: 60, w: 30, h: 30 },
-            { id: 31, name: "Κούτα 50x45x11", l: 50, w: 45, h: 11 },
-            { id: 32, name: "Κούτα 50x50x50", l: 50, w: 50, h: 50 },
-            { id: 33, name: "Κούτα 50x40x40", l: 50, w: 40, h: 40 },
-            { id: 34, name: "Κούτα 50x40x30", l: 50, w: 40, h: 30 },
-            { id: 35, name: "Κούτα 50x40x20", l: 50, w: 40, h: 20 },
-            { id: 36, name: "Κούτα 50x30x40", l: 50, w: 30, h: 40 },
-            { id: 37, name: "Κούτα 50x40x15", l: 50, w: 40, h: 15 }
+            { id: 26, name: "Κούτα 70x40x30", l: 70, w: 40, h: 30 },
+            { id: 27, name: "Κούτα 80x60x50", l: 80, w: 60, h: 50 },
+            { id: 28, name: "Κούτα 80x50x40", l: 80, w: 50, h: 40 },
+            { id: 29, name: "Κούτα 30x25x15", l: 30, w: 25, h: 15 },
+            { id: 30, name: "Κούτα 25x15x10", l: 25, w: 15, h: 10 },
+            { id: 31, name: "Κούτα 15x15x10", l: 15, w: 15, h: 10 },
+            { id: 32, name: "Κούτα 15x10x10", l: 15, w: 10, h: 10 },
+            { id: 33, name: "Κούτα 40x25x20", l: 40, w: 25, h: 20 },
+            { id: 34, name: "Κούτα 55x35x25", l: 55, w: 35, h: 25 },
+            { id: 35, name: "Κούτα 65x45x35", l: 65, w: 45, h: 35 },
+            { id: 36, name: "Κούτα 35x35x25", l: 35, w: 35, h: 25 },
+            { id: 37, name: "Κούτα 28x18x12", l: 28, w: 18, h: 12 }
         ];
 
         let loadedProjects = [];
-        let lastCalculationSummary = null;
+        let currentCalculation = null;
 
         window.onload = function() {
             renderBinsList();
             let savedUrl = localStorage.getItem('googleScriptUrl');
             
-            // Καθαρισμός παλιάς/ελαττωματικής διεύθυνσης από το κινητό
-            if (!savedUrl || savedUrl.includes('...') || !savedUrl.includes('AKfycbw')) {
+            // Auto-clean stale or broken saved URLs on mobile
+            if (!savedUrl || savedUrl.trim() === '' || savedUrl.includes('...') || !savedUrl.includes('AKfycbw')) {
                 savedUrl = DEFAULT_SCRIPT_URL;
                 localStorage.setItem('googleScriptUrl', savedUrl);
             }
@@ -299,29 +287,37 @@
             loadProjectsFromSheet(savedUrl);
         };
 
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.className = `p-3 rounded-xl text-xs font-semibold text-center transition-all ${isError ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}`;
+            toast.innerText = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 4000);
+        }
+
         function renderBinsList() {
             const list = document.getElementById('binsList');
             document.getElementById('binCountBadge').innerText = `${availableBins.length} κουτιά`;
 
             list.innerHTML = availableBins.map(bin => `
-                <li class="flex justify-between items-center bg-white p-2.5 rounded-lg border border-slate-200 shadow-xs text-xs">
+                <div class="flex justify-between items-center bg-white p-2.5 rounded-lg border border-slate-200 shadow-xs text-xs">
                     <div>
                         <span class="font-bold text-slate-800">${bin.name}</span>
-                        <span class="text-slate-500 block">${bin.l} x ${bin.w} x ${bin.h} cm (${(bin.l * bin.w * bin.h).toLocaleString()} cm³)</span>
+                        <span class="text-slate-500 block text-[10px]">${bin.l} x ${bin.w} x ${bin.h} cm (${(bin.l * bin.w * bin.h).toLocaleString()} cm³)</span>
                     </div>
                     <button onclick="removeBin(${bin.id})" class="text-slate-400 hover:text-red-500 p-1 font-bold transition cursor-pointer" title="Διαγραφή">✕</button>
-                </li>
+                </div>
             `).join('');
         }
 
-        function addCustomBin() {
+        function addKustomBin() {
             const name = document.getElementById('binName').value.trim() || `Κουτί ${availableBins.length + 1}`;
             const l = parseFloat(document.getElementById('binL').value);
             const w = parseFloat(document.getElementById('binW').value);
             const h = parseFloat(document.getElementById('binH').value);
 
             if (!l || !w || !h || l <= 0 || w <= 0 || h <= 0) {
-                alert("Παρακαλώ εισάγετε έγκυρες διαστάσεις για το νέο χαρτοκιβώτιο!");
+                showToast("Παρακαλώ εισάγετε έγκυρες διαστάσεις για το νέο χαρτοκιβώτιο!", true);
                 return;
             }
 
@@ -336,19 +332,16 @@
 
         function removeBin(id) {
             if (availableBins.length <= 1) {
-                alert("Πρέπει να υπάρχει τουλάχιστον ένα διαθέσιμο κουτί στη λίστα!");
+                showToast("Πρέπει να υπάρχει τουλάχιστον ένα διαθέσιμο κουτί!", true);
                 return;
             }
             availableBins = availableBins.filter(b => b.id !== id);
             renderBinsList();
         }
 
-        function saveAndConnectSheet() {
-            const url = document.getElementById('scriptUrl').value.trim();
-            if (!url || !url.startsWith('https://script.google.com')) {
-                alert("Παρακαλώ εισάγετε ένα έγκυρο Web App URL από το Google Apps Script!");
-                return;
-            }
+        function saveAndLoadProjects() {
+            let url = document.getElementById('scriptUrl').value.trim();
+            if (!url) url = DEFAULT_SCRIPT_URL;
             localStorage.setItem('googleScriptUrl', url);
             loadProjectsFromSheet(url);
         }
@@ -389,362 +382,268 @@
                     statusEl.className = "text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900";
                     statusEl.innerText = `🟢 Συνδέθηκε (${data.length} Projects)`;
                 })
-                .catch(() => {
-                    statusEl.className = "text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900";
-                    statusEl.innerText = "⚠️ Μη διαθέσιμο (Χειροκίνητη χρήση)";
+                .catch(err => {
+                    if (url !== DEFAULT_SCRIPT_URL) {
+                        localStorage.setItem('googleScriptUrl', DEFAULT_SCRIPT_URL);
+                        document.getElementById('scriptUrl').value = DEFAULT_SCRIPT_URL;
+                        loadProjectsFromSheet(DEFAULT_SCRIPT_URL);
+                    } else {
+                        statusEl.className = "text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900";
+                        statusEl.innerText = "⚠️ Μη διαθέσιμο (Χειροκίνητη χρήση)";
+                    }
                 });
         }
 
         function onProjectSelectChange() {
-            const select = document.getElementById('projectSelect');
-            const customInput = document.getElementById('customProjectName');
-            
-            if (select.value) {
-                const selectedText = select.options[select.selectedIndex].text.replace(/^\[Γραμμή \d+\]\s*/, '');
-                customInput.value = selectedText;
+            const row = document.getElementById('projectSelect').value;
+            const manualInput = document.getElementById('manualProjectName');
+            if (row) {
+                const proj = loadedProjects.find(p => p.row == row);
+                if (proj) {
+                    manualInput.value = proj.name;
+                }
             }
         }
 
-        function getMaxGeomFit(bin, itemL, itemW, itemH) {
-            const itemOrientations = [
-                [itemL, itemW, itemH],
-                [itemL, itemH, itemW],
-                [itemW, itemL, itemH],
-                [itemW, itemH, itemL],
-                [itemH, itemL, itemW],
-                [itemH, itemW, itemL]
+        function getFitOrientations(iL, iW, iH, bL, bW, bH) {
+            const dims = [iL, iW, iH];
+            const orientations = [
+                [dims[0], dims[1], dims[2]],
+                [dims[0], dims[2], dims[1]],
+                [dims[1], dims[0], dims[2]],
+                [dims[1], dims[2], dims[0]],
+                [dims[2], dims[0], dims[1]],
+                [dims[2], dims[1], dims[0]]
             ];
 
-            let maxCount = 0;
-
-            for (let [iL, iW, iH] of itemOrientations) {
-                if (iL <= bin.l && iW <= bin.w && iH <= bin.h) {
-                    const countL = Math.floor(bin.l / iL);
-                    const countW = Math.floor(bin.w / iW);
-                    const countH = Math.floor(bin.h / iH);
-                    const total = countL * countW * countH;
-                    if (total > maxCount) {
-                        maxCount = total;
-                    }
-                }
+            let maxItems = 0;
+            for (let o of orientations) {
+                const nx = Math.floor(bL / o[0]);
+                const ny = Math.floor(bW / o[1]);
+                const nz = Math.floor(bH / o[2]);
+                const count = nx * ny * nz;
+                if (count > maxItems) maxItems = count;
             }
-
-            return maxCount;
+            return maxItems;
         }
 
         function calculatePacking() {
             const itemL = parseFloat(document.getElementById('itemL').value);
             const itemW = parseFloat(document.getElementById('itemW').value);
             const itemH = parseFloat(document.getElementById('itemH').value);
-            const itemWeight = parseFloat(document.getElementById('itemWeight').value);
-            const totalQty = parseInt(document.getElementById('itemQty').value);
-            const maxBoxWeight = parseFloat(document.getElementById('maxBoxWeight').value) || 18;
+            const itemWeight = parseFloat(document.getElementById('itemWeight').value) || 0;
+            const totalQty = parseInt(document.getElementById('totalQty').value);
+            const maxWeightLimit = parseFloat(document.getElementById('maxWeightLimit').value) || 18;
 
-            if (!itemL || !itemW || !itemH || !itemWeight || !totalQty || itemL <= 0 || itemW <= 0 || itemH <= 0 || itemWeight <= 0 || totalQty <= 0) {
-                alert("Παρακαλώ συμπληρώστε όλα τα πεδία του προϊόντος (Διαστάσεις, Βάρος, Ποσότητα) με θετικούς αριθμούς!");
+            if (!itemL || !itemW || !itemH || !totalQty || itemL <= 0 || itemW <= 0 || itemH <= 0 || totalQty <= 0) {
+                showToast("Παρακαλώ συμπληρώστε έγκυρες διαστάσεις και ποσότητα προϊόντος!", true);
                 return;
             }
 
-            if (itemWeight > maxBoxWeight) {
-                alert(`Το βάρος ενός μόνο τεμαχίου (${itemWeight} kg) ξεπερνά το μέγιστο όριο κιβωτίου (${maxBoxWeight} kg)!`);
-                return;
-            }
-
-            const binCapabilities = availableBins.map(bin => {
-                const geomFit = getMaxGeomFit(bin, itemL, itemW, itemH);
-                const weightFit = Math.floor(maxBoxWeight / itemWeight);
-                const actualFit = Math.min(geomFit, weightFit);
-
-                return {
-                    ...bin,
-                    geomFit,
-                    weightFit,
-                    actualFit,
-                    volume: bin.l * bin.w * bin.h
-                };
-            }).filter(b => b.actualFit > 0);
-
-            const resultDiv = document.getElementById('result');
-            resultDiv.classList.remove('hidden');
-
-            if (binCapabilities.length === 0) {
-                resultDiv.innerHTML = `
-                    <div class="p-5 bg-red-50 border border-red-200 rounded-xl text-red-900">
-                        <div class="flex items-center gap-3">
-                            <span class="text-3xl">❌</span>
-                            <div>
-                                <h3 class="font-bold text-lg">Δεν βρέθηκε κατάλληλο κουτί</h3>
-                                <p class="text-sm mt-1">Το προϊόν (${itemL} x ${itemW} x ${itemH} cm, ${itemWeight} kg) δεν χωράει σε κανένα από τα διαθέσιμα κουτιά της αποθήκης σας.</p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                resultDiv.scrollIntoView({ behavior: 'smooth' });
-                return;
-            }
-
-            binCapabilities.sort((a, b) => b.actualFit - a.actualFit || a.volume - b.volume);
-            const mainBin = binCapabilities[0];
-
-            const fullBoxesCount = Math.floor(totalQty / mainBin.actualFit);
-            const remainderQty = totalQty % mainBin.actualFit;
-
-            let remainderBin = null;
-
-            if (remainderQty > 0) {
-                const suitableBinsForRemainder = binCapabilities
-                    .filter(b => b.actualFit >= remainderQty)
-                    .sort((a, b) => a.volume - b.volume);
-
-                if (suitableBinsForRemainder.length > 0) {
-                    remainderBin = suitableBinsForRemainder[0];
-                } else {
-                    remainderBin = mainBin;
+            let maxItemsByWeight = Infinity;
+            if (itemWeight > 0) {
+                maxItemsByWeight = Math.floor(maxWeightLimit / itemWeight);
+                if (maxItemsByWeight < 1) {
+                    showToast(`Το βάρος ενός τεμαχίου (${itemWeight}kg) υπερβαίνει το μέγιστο όριο των ${maxWeightLimit}kg!`, true);
+                    return;
                 }
             }
 
-            const totalOrderWeight = (totalQty * itemWeight).toFixed(2);
-            let summaryTextParts = [];
-            let breakdownHtml = '';
+            let sortedBins = [...availableBins].map(bin => {
+                let volCapacity = getFitOrientations(itemL, itemW, itemH, bin.l, bin.w, bin.h);
+                let capacity = Math.min(volCapacity, maxItemsByWeight);
+                return { ...bin, capacity, volume: bin.l * bin.w * bin.h };
+            }).filter(b => b.capacity > 0);
 
-            const individualBoxes = [];
+            if (sortedBins.length === 0) {
+                showToast("Κανένα διαθέσιμο χαρτοκιβώτιο δεν χωράει το προϊόν με τους περιορισμούς βάρους/διαστάσεων!", true);
+                return;
+            }
 
-            if (fullBoxesCount > 0) {
-                const boxWeight = (mainBin.actualFit * itemWeight).toFixed(2);
-                summaryTextParts.push(`${fullBoxesCount}x ${mainBin.name} (${mainBin.actualFit}τμχ, ${boxWeight}kg)`);
-                
-                for (let i = 0; i < fullBoxesCount; i++) {
-                    individualBoxes.push({
-                        binName: mainBin.name,
-                        dims: `${mainBin.l}x${mainBin.w}x${mainBin.h} cm`,
-                        qty: mainBin.actualFit,
-                        weight: boxWeight
+            sortedBins.sort((a, b) => b.capacity - a.capacity || a.volume - b.volume);
+
+            let remainingQty = totalQty;
+            let resultBins = [];
+
+            while (remainingQty > 0) {
+                let bestBin = sortedBins.find(b => b.capacity <= remainingQty) || sortedBins[sortedBins.length - 1];
+                let itemsInThisBin = Math.min(remainingQty, bestBin.capacity);
+
+                let existing = resultBins.find(r => r.bin.id === bestBin.id && r.qtyPerBin === itemsInThisBin);
+                if (existing) {
+                    existing.boxCount++;
+                } else {
+                    resultBins.push({
+                        bin: bestBin,
+                        qtyPerBin: itemsInThisBin,
+                        boxCount: 1,
+                        weightPerBin: itemsInThisBin * itemWeight
                     });
                 }
-
-                breakdownHtml += `
-                    <div class="bg-white p-4 rounded-xl border border-emerald-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                        <div class="flex items-center gap-3">
-                            <span class="bg-emerald-600 text-white font-extrabold text-base px-3 py-1.5 rounded-lg shadow-xs">${fullBoxesCount}x</span>
-                            <div>
-                                <h4 class="font-bold text-slate-800 text-base">${mainBin.name} <span class="text-xs font-normal text-slate-500">(${mainBin.l} x ${mainBin.w} x ${mainBin.h} cm)</span></h4>
-                                <p class="text-xs text-slate-600 mt-0.5">Περιέχει: <strong>${mainBin.actualFit} τμχ</strong> ανά κιβώτιο</p>
-                            </div>
-                        </div>
-                        <div class="text-left sm:text-right bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 w-full sm:w-auto">
-                            <span class="text-[10px] text-emerald-700 block font-semibold uppercase">Βάρος ανά Κιβώτιο</span>
-                            <span class="text-sm font-extrabold text-emerald-900">${boxWeight} kg</span>
-                        </div>
-                    </div>
-                `;
+                remainingQty -= itemsInThisBin;
             }
 
-            if (remainderQty > 0 && remainderBin) {
-                const remainderBoxWeight = (remainderQty * itemWeight).toFixed(2);
-                summaryTextParts.push(`1x ${remainderBin.name} (${remainderQty}τμχ, ${remainderBoxWeight}kg)`);
-                
-                individualBoxes.push({
-                    binName: remainderBin.name,
-                    dims: `${remainderBin.l}x${remainderBin.w}x${remainderBin.h} cm`,
-                    qty: remainderQty,
-                    weight: remainderBoxWeight
-                });
+            const totalBoxes = resultBins.reduce((acc, r) => acc + r.boxCount, 0);
+            const totalWeight = totalQty * itemWeight;
 
-                breakdownHtml += `
-                    <div class="bg-white p-4 rounded-xl border border-blue-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                        <div class="flex items-center gap-3">
-                            <span class="bg-blue-600 text-white font-extrabold text-base px-3 py-1.5 rounded-lg shadow-xs">1x</span>
-                            <div>
-                                <h4 class="font-bold text-slate-800 text-base">${remainderBin.name} <span class="text-xs font-normal text-slate-500">(${remainderBin.l} x ${remainderBin.w} x ${remainderBin.h} cm)</span></h4>
-                                <p class="text-xs text-slate-600 mt-0.5">Περιέχει: <strong>${remainderQty} τμχ</strong> (υπόλοιπο)</p>
-                            </div>
-                        </div>
-                        <div class="text-left sm:text-right bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 w-full sm:w-auto">
-                            <span class="text-[10px] text-blue-700 block font-semibold uppercase">Βάρος Κιβωτίου</span>
-                            <span class="text-sm font-extrabold text-blue-900">${remainderBoxWeight} kg</span>
-                        </div>
-                    </div>
-                `;
-            }
-
-            const totalBoxes = fullBoxesCount + (remainderQty > 0 ? 1 : 0);
-            const summaryString = summaryTextParts.join(' + ');
+            let textSummaryParts = resultBins.map(r => {
+                const formattedName = r.bin.name.replace(/^κουτι\s+/i, 'Συσκευασία ').replace(/^κουτα\s+/i, 'Συσκευασία ');
+                return `${r.boxCount}x ${formattedName} (${r.qtyPerBin} τμχ/κουτί)`;
+            });
+            const textSummary = textSummaryParts.join(' + ');
 
             const selectedProjectRow = document.getElementById('projectSelect').value;
-            const projectName = document.getElementById('customProjectName').value.trim() || 'ΓΕΝΙΚΗ ΑΠΟΣΤΟΛΗ';
+            const projectName = document.getElementById('manualProjectName').value.trim() || 
+                                (selectedProjectRow ? loadedProjects.find(p => p.row == selectedProjectRow)?.name : 'ΓΕΝΙΚΗ ΑΠΟΣΤΟΛΗ');
 
-            lastCalculationSummary = {
+            currentCalculation = {
                 projectName,
-                summaryString,
+                projectRow: selectedProjectRow,
                 totalBoxes,
-                individualBoxes
+                totalQty,
+                totalWeight,
+                textSummary,
+                resultBins,
+                itemWeight
             };
 
-            resultDiv.innerHTML = `
-                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
-                    <div class="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200">
+            renderResultsUI();
+            
+            if (selectedProjectRow) {
+                sendToGoogleSheet();
+            }
+        }
+
+        function renderResultsUI() {
+            const res = currentCalculation;
+            if (!res) return;
+
+            document.getElementById('resultsSection').classList.remove('hidden');
+            document.getElementById('resultSummary').innerText = `Απαιτούνται συνολικά ${res.totalBoxes} κιβώτιο/α`;
+            document.getElementById('resultTotalWeight').innerText = `${res.totalWeight.toFixed(2)} kg`;
+            document.getElementById('resultTotalQty').innerText = `Συνολικά ${res.totalQty} τμχ`;
+
+            const list = document.getElementById('breakdownList');
+            list.innerHTML = res.resultBins.map(r => `
+                <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
+                    <div class="flex items-center gap-3">
+                        <span class="font-black text-xs text-white bg-emerald-600 px-2.5 py-1 rounded-lg">${r.boxCount}x</span>
                         <div>
-                            <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider block">Αποτέλεσμα Συσκευασίας</span>
-                            <h3 class="text-xl font-extrabold text-slate-800">Απαιτούνται συνολικά <span class="text-emerald-600">${totalBoxes} κιβώτιο/α</span></h3>
-                        </div>
-                        <div class="flex gap-4 text-xs">
-                            <div class="bg-white px-3 py-2 rounded-xl border border-slate-200 text-center">
-                                <span class="text-slate-400 block">Συνολικό Βάρος</span>
-                                <span class="font-bold text-slate-700 text-sm">${totalOrderWeight} kg</span>
-                            </div>
-                            <div class="bg-white px-3 py-2 rounded-xl border border-slate-200 text-center">
-                                <span class="text-slate-400 block">Συνολικά Τεμάχια</span>
-                                <span class="font-bold text-slate-700 text-sm">${totalQty} τμχ</span>
-                            </div>
+                            <span class="font-bold text-slate-800 text-xs">${r.bin.name.replace(/^κουτι\s+/i, 'Συσκευασία ').replace(/^κουτα\s+/i, 'Συσκευασία ')}</span>
+                            <span class="text-[11px] text-slate-500 block">Περιέχει <b>${r.qtyPerBin} τμχ</b> ανά κιβώτιο</span>
                         </div>
                     </div>
-
-                    <div class="space-y-3">
-                        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Αναλυτική Κατανομή Κιβωτίων:</h4>
-                        ${breakdownHtml}
-                    </div>
-
-                    <div class="pt-4 border-t border-slate-200 flex flex-wrap gap-3">
-                        <button onclick="sendToGoogleSheet('${summaryString}')" class="flex-1 min-w-[200px] bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-sm">
-                            <span>🚀</span> Αποστολή στο Google Sheet (Στήλη K)
-                        </button>
-                        <button onclick="openLabelsModal()" class="bg-slate-900 hover:bg-black text-white font-bold py-3 px-5 rounded-xl text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-sm">
-                            <span>🏷️</span> Εκτύπωση Ετικετών (${totalBoxes})
-                        </button>
-                        <button onclick="copyToClipboard('${summaryString}')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 cursor-pointer">
-                            <span>📋</span> Αντιγραφή
-                        </button>
+                    <div class="text-right">
+                        <span class="text-xs font-bold text-slate-700 block">${r.weightPerBin.toFixed(2)} kg</span>
+                        <span class="text-[10px] text-slate-400">ανά κιβώτιο</span>
                     </div>
                 </div>
-            `;
+            `).join('');
 
-            if (selectedProjectRow) {
-                sendToGoogleSheet(summaryString);
-            }
-
-            resultDiv.scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
         }
 
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                alert("📋 Το κείμενο αντιγράφηκε επιτυχώς!");
-            }).catch(() => {
-                const el = document.createElement('textarea');
-                el.value = text;
-                document.body.appendChild(el);
-                el.select();
-                document.execCommand('copy');
-                document.body.removeChild(el);
-                alert("📋 Το κείμενο αντιγράφηκε επιτυχώς!");
-            });
-        }
+        function sendToGoogleSheet() {
+            if (!currentCalculation) return;
 
-        function sendToGoogleSheet(summaryText) {
-            const scriptUrl = localStorage.getItem('googleScriptUrl');
-            const rowNumber = document.getElementById('projectSelect').value;
-            const projectName = document.getElementById('customProjectName').value.trim();
+            const url = localStorage.getItem('googleScriptUrl') || DEFAULT_SCRIPT_URL;
+            const btn = document.getElementById('btnSendSheet');
 
-            if (!scriptUrl) {
-                alert("⚠️ Δεν έχει συνδεθεί το Google Sheet! Παρακαλώ εισάγετε το Web App URL στο πάνω μέρος.");
+            if (!currentCalculation.projectRow) {
+                showToast("Δεν έχετε επιλέξει Project από το Google Sheet! Η αποστολή παραλείφθηκε.", true);
                 return;
             }
 
-            const payload = {
-                rowNumber: rowNumber ? parseInt(rowNumber) : null,
-                projectName: projectName,
-                summaryText: summaryText
-            };
+            btn.disabled = true;
+            btn.innerText = "⏳ Αποστολή στο Sheet...";
 
-            fetch(scriptUrl, {
+            fetch(url, {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            }).then(() => {
-                alert("✅ Η εγγραφή στη Στήλη Κ του Google Sheet έγινε επιτυχώς!");
-            }).catch(() => {
-                alert("❌ Υπήρξε σφάλμα κατά την αποστολή στο Google Sheet.");
+                body: JSON.stringify({
+                    row: currentCalculation.projectRow,
+                    text: currentCalculation.textSummary
+                })
+            })
+            .then(() => {
+                showToast(`🟢 Επιτυχής ενημέρωση στο Google Sheet (Γραμμή ${currentCalculation.projectRow})!`);
+                btn.disabled = false;
+                btn.innerText = "🚀 Αποστολή στο Google Sheet";
+            })
+            .catch(err => {
+                showToast("⚠️ Αποτυχία σύνδεσης με το Google Sheet.", true);
+                btn.disabled = false;
+                btn.innerText = "🚀 Αποστολή στο Google Sheet";
             });
         }
 
-        /* ΛΟΓΙΚΗ ΕΚΤΥΠΩΣΗΣ ΕΤΙΚΕΤΩΝ BROTHER (DK-11209 - PREMIUM INDUSTRIAL LAYOUT) */
-        function openLabelsModal() {
-            if (!lastCalculationSummary) return;
+        function copyToClipboard() {
+            if (!currentCalculation) return;
+            const temp = document.createElement('textarea');
+            temp.value = currentCalculation.textSummary;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+            showToast("📋 Το κείμενο συσκευασίας αντιγράφηκε στο πρόχειρο!");
+        }
 
-            const modal = document.getElementById('labelsModal');
-            const container = document.getElementById('labelsPreviewContainer');
+        function openPrintModal() {
+            if (!currentCalculation) return;
+
             const printSection = document.getElementById('printSection');
+            printSection.innerHTML = '';
 
-            const { projectName, totalBoxes, individualBoxes } = lastCalculationSummary;
-            const currentDate = new Date().toLocaleDateString('el-GR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            let boxCounter = 1;
+            const totalBoxes = currentCalculation.totalBoxes;
+            const today = new Date().toLocaleDateString('el-GR');
 
-            let previewHtml = '';
-            let printSectionHtml = '';
+            currentCalculation.resultBins.forEach(r => {
+                for (let i = 0; i < r.boxCount; i++) {
+                    const page = document.createElement('div');
+                    page.className = 'label-page';
 
-            individualBoxes.forEach((box, idx) => {
-                const labelNum = `${idx + 1}/${totalBoxes}`;
-                // Αλλαγή "Κούτα" / "Κουτί" σε "Συσκευασία"
-                const cleanBinName = box.binName.replace(/^(Κούτα|Κουτί)\s*/gi, 'Συσκευασία ');
+                    const cleanBinName = r.bin.name
+                        .replace(/^κουτι\s+/i, '')
+                        .replace(/^κουτα\s+/i, '')
+                        .replace(/^συσκευασια\s+/i, '');
 
-                // Σχέδιο Ετικέτας - Premium Industrial Layout Χωρίς Barcode (52mm x 23mm)
-                const labelContent = `
-                    <!-- HEADER: Εταιρεία & Project & Badge -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #000; padding-bottom: 1px; margin-bottom: 1.5px;">
-                        <div style="display: flex; align-items: center; gap: 4px; overflow: hidden;">
-                            <span style="font-size: 7px; font-weight: 900; background: #000; color: #fff; padding: 0.5px 3px; border-radius: 1px; letter-spacing: 0.5px; line-height: 1;">ATRION</span>
-                            <span style="font-size: 9px; font-weight: 900; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 28mm; line-height: 1;">${projectName}</span>
+                    page.innerHTML = `
+                        <div class="label-box">
+                            <!-- Top Header -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #000; padding-bottom: 1.5px;">
+                                <div style="display: flex; align-items: center; gap: 4px; overflow: hidden; max-width: 78%;">
+                                    <span style="font-size: 8px; font-weight: 900; background: #000; color: #fff; padding: 1px 3px; border-radius: 2px;">ATRION</span>
+                                    <span style="font-size: 10px; font-weight: 900; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${currentCalculation.projectName}</span>
+                                </div>
+                                <span style="font-size: 9px; font-weight: 900; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">${boxCounter}/${totalBoxes}</span>
+                            </div>
+
+                            <!-- Middle Main Values -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; gap: 3px; margin: 2px 0;">
+                                <div style="flex: 1; border: 1.5px solid #000; border-radius: 3px; text-align: center; padding: 1px 0; background: #fcfcfc;">
+                                    <span style="font-size: 7px; font-weight: 800; display: block; color: #333; line-height: 1;">ΠΟΣΟΤΗΤΑ</span>
+                                    <span style="font-size: 13.5px; font-weight: 900; line-height: 1.1;">${r.qtyPerBin} <span style="font-size: 8px; font-weight: 800;">τμχ</span></span>
+                                </div>
+                                <div style="flex: 1; border: 1px solid #000; border-radius: 3px; text-align: center; padding: 1px 0; background: #fcfcfc;">
+                                    <span style="font-size: 7px; font-weight: 800; display: block; color: #333; line-height: 1;">ΒΑΡΟΣ</span>
+                                    <span style="font-size: 12px; font-weight: 900; line-height: 1.1;">${r.weightPerBin.toFixed(2)} <span style="font-size: 8px; font-weight: 800;">kg</span></span>
+                                </div>
+                            </div>
+
+                            <!-- Bottom Box Details & Date -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #000; padding-top: 1.5px; font-size: 7.5px; font-weight: 700;">
+                                <span>📦 Συσκευασία ${cleanBinName}</span>
+                                <span>${today}</span>
+                            </div>
                         </div>
-                        <span style="font-size: 8.5px; font-weight: 900; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px; line-height: 1; letter-spacing: 0.5px;">${labelNum}</span>
-                    </div>
-
-                    <!-- MAIN INFO: Ποσότητα & Βάρος (Γιγάντιοι Αριθμοί) -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin: 1px 0; gap: 2px;">
-                        <div style="border: 1.5px solid #000; padding: 1px 2px; border-radius: 2px; text-align: center; flex: 1.1; background: #fff;">
-                            <span style="font-size: 5.5px; font-weight: 800; display: block; text-transform: uppercase; line-height: 1; color: #333;">ΠΟΣΟΤΗΤΑ</span>
-                            <span style="font-size: 13.5px; font-weight: 900; line-height: 1; display: block; color: #000;">${box.qty} <span style="font-size: 7.5px; font-weight: 800;">τμχ</span></span>
-                        </div>
-                        <div style="border: 1px solid #000; padding: 1px 2px; border-radius: 2px; text-align: center; flex: 0.9; background: #f8f8f8;">
-                            <span style="font-size: 5.5px; font-weight: 800; display: block; text-transform: uppercase; line-height: 1; color: #333;">ΒΑΡΟΣ</span>
-                            <span style="font-size: 11px; font-weight: 900; line-height: 1.1; display: block; color: #000;">${box.weight} <span style="font-size: 6.5px; font-weight: 700;">kg</span></span>
-                        </div>
-                    </div>
-
-                    <!-- FOOTER: Τύπος Συσκευασίας & Ημερομηνία -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #000; padding-top: 1px; margin-top: 1px; font-size: 6.5px; font-weight: 800; line-height: 1;">
-                        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38mm;">📦 ${cleanBinName}</span>
-                        <span style="font-size: 6px; font-weight: 700; color: #444;">${currentDate}</span>
-                    </div>
-                `;
-
-                // Για την Προεπισκόπηση στο Modal
-                previewHtml += `
-                    <div class="bg-white p-3 rounded-lg border border-slate-300 shadow-sm flex items-center justify-between">
-                        <div style="width: 58mm; height: 26mm; border: 1px solid #000; padding: 1.5mm; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; background: #fff;">
-                            ${labelContent}
-                        </div>
-                        <span class="text-xs font-bold text-slate-500">Ετικέτα ${labelNum}</span>
-                    </div>
-                `;
-
-                // Για την Εκτύπωση στον Θερμικό
-                printSectionHtml += `
-                    <div class="thermal-label">
-                        ${labelContent}
-                    </div>
-                `;
+                    `;
+                    printSection.appendChild(page);
+                    boxCounter++;
+                }
             });
 
-            container.innerHTML = previewHtml;
-            printSection.innerHTML = printSectionHtml;
-
-            modal.classList.remove('hidden');
-        }
-
-        function closeLabelsModal() {
-            document.getElementById('labelsModal').classList.add('hidden');
-        }
-
-        function triggerThermalPrint() {
             window.print();
         }
     </script>
