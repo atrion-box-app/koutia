@@ -94,7 +94,7 @@
                     ⚪ Μη συνδεδεμένο
                 </span>
             </div>
-            <p class="text-xs text-amber-700 mb-2">Επικολλήστε το Web App URL από το Google Apps Script για αυτόματη ενημέρωση της Στήλης Κ.</p>
+            <p class="text-xs text-amber-700 mb-2">Το URL είναι ήδη προ-αποθηκευμένο για αυτόματη σύνδεση σε όλες τις συσκευές.</p>
             <div class="flex flex-col sm:flex-row gap-2">
                 <input type="text" id="scriptUrl" placeholder="https://script.google.com/macros/s/.../exec" class="flex-1 border border-amber-300 p-2.5 rounded-lg bg-white text-xs font-mono text-slate-800 outline-none focus:ring-2 focus:ring-amber-500">
                 <button onclick="saveAndConnectSheet()" class="bg-amber-800 hover:bg-amber-900 text-white font-bold text-xs px-4 py-2.5 rounded-lg transition cursor-pointer">
@@ -238,6 +238,9 @@
     </div>
 
     <script>
+        // ΠΡΟ-ΑΠΟΘΗΚΕΥΜΕΝΟ SCRIPT URL ΓΙΑ ΑΥΤΟΜΑΤΗ ΣΥΝΔΕΣΗ
+        const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_9oSxN5rs8BuMwCoZc1AwnN0etQEytF_S1SfwPuA4zkbFGxU4YtcE1l0zMsU5w/exec';
+
         // Τα 37 Χαρτοκιβώτια Αποθήκης
         let availableBins = [
             { id: 1, name: "Κουτί 40x40x30", l: 40, w: 40, h: 30 },
@@ -284,11 +287,13 @@
 
         window.onload = function() {
             renderBinsList();
-            const savedUrl = localStorage.getItem('googleScriptUrl');
-            if (savedUrl) {
-                document.getElementById('scriptUrl').value = savedUrl;
-                loadProjectsFromSheet(savedUrl);
+            let savedUrl = localStorage.getItem('googleScriptUrl');
+            if (!savedUrl) {
+                savedUrl = DEFAULT_SCRIPT_URL;
+                localStorage.setItem('googleScriptUrl', savedUrl);
             }
+            document.getElementById('scriptUrl').value = savedUrl;
+            loadProjectsFromSheet(savedUrl);
         };
 
         function renderBinsList() {
@@ -347,30 +352,43 @@
 
         function loadProjectsFromSheet(url) {
             const statusEl = document.getElementById('connectionStatus');
+            if (!statusEl) return;
+
             statusEl.className = "text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900";
             statusEl.innerText = "⏳ Φόρτωση...";
 
+            if (!url || !url.startsWith('https://script.google.com')) {
+                statusEl.className = "text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900";
+                statusEl.innerText = "⚪ Μη συνδεδεμένο";
+                return;
+            }
+
             fetch(url)
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) throw new Error('HTTP status ' + res.status);
+                    return res.json();
+                })
                 .then(data => {
+                    if (!Array.isArray(data)) throw new Error('Invalid response format');
                     loadedProjects = data;
                     const select = document.getElementById('projectSelect');
-                    select.innerHTML = '<option value="">-- Χωρίς επιλογή Project (Χειροκίνητη χρήση) --</option>';
+                    if (select) {
+                        select.innerHTML = '<option value="">-- Χωρίς επιλογή Project (Χειροκίνητη χρήση) --</option>';
 
-                    data.forEach(p => {
-                        const opt = document.createElement('option');
-                        opt.value = p.row;
-                        opt.innerText = `[Γραμμή ${p.row}] ${p.name}`;
-                        select.appendChild(opt);
-                    });
+                        data.forEach(p => {
+                            const opt = document.createElement('option');
+                            opt.value = p.row;
+                            opt.innerText = `[Γραμμή ${p.row}] ${p.name}`;
+                            select.appendChild(opt);
+                        });
+                    }
 
                     statusEl.className = "text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900";
                     statusEl.innerText = `🟢 Συνδέθηκε (${data.length} Projects)`;
                 })
-                .catch(err => {
-                    console.error(err);
-                    statusEl.className = "text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-900";
-                    statusEl.innerText = "🔴 Σφάλμα σύνδεσης";
+                .catch(() => {
+                    statusEl.className = "text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900";
+                    statusEl.innerText = "⚠️ Μη διαθέσιμο (Χειροκίνητη χρήση)";
                 });
         }
 
@@ -641,8 +659,7 @@
                 body: JSON.stringify(payload)
             }).then(() => {
                 alert("✅ Η εγγραφή στη Στήλη Κ του Google Sheet έγινε επιτυχώς!");
-            }).catch(err => {
-                console.error(err);
+            }).catch(() => {
                 alert("❌ Υπήρξε σφάλμα κατά την αποστολή στο Google Sheet.");
             });
         }
