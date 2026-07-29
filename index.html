@@ -80,7 +80,7 @@
         
         <!-- HEADER -->
         <header class="text-center mb-8 pb-6 border-b border-slate-200">
-            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">📦 Υπολογιστής Χαρτοκιβωτίων</h1>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">📦 Έξυπνος Υπολογιστής Χαρτοκιβωτίων</h1>
             <p class="text-slate-500 text-sm mt-1">Αυτόματος υπολογισμός συσκευασίας (όριο **18 kg**), Google Sheets & Εκτύπωση Ετικετών.</p>
         </header>
 
@@ -288,10 +288,13 @@
         window.onload = function() {
             renderBinsList();
             let savedUrl = localStorage.getItem('googleScriptUrl');
-            if (!savedUrl) {
+            
+            // Καθαρισμός παλιάς/ελαττωματικής διεύθυνσης από το κινητό
+            if (!savedUrl || savedUrl.includes('...') || !savedUrl.includes('AKfycbw')) {
                 savedUrl = DEFAULT_SCRIPT_URL;
                 localStorage.setItem('googleScriptUrl', savedUrl);
             }
+            
             document.getElementById('scriptUrl').value = savedUrl;
             loadProjectsFromSheet(savedUrl);
         };
@@ -357,13 +360,13 @@
             statusEl.className = "text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900";
             statusEl.innerText = "⏳ Φόρτωση...";
 
-            if (!url || !url.startsWith('https://script.google.com')) {
-                statusEl.className = "text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900";
-                statusEl.innerText = "⚪ Μη συνδεδεμένο";
-                return;
+            if (!url || !url.startsWith('https://script.google.com') || url.includes('...')) {
+                url = DEFAULT_SCRIPT_URL;
+                localStorage.setItem('googleScriptUrl', url);
+                document.getElementById('scriptUrl').value = url;
             }
 
-            fetch(url)
+            fetch(url, { redirect: 'follow' })
                 .then(res => {
                     if (!res.ok) throw new Error('HTTP status ' + res.status);
                     return res.json();
