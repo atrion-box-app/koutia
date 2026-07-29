@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Έξυπνος Υπολογιστής Χαρτοκιβωτίων</title>
+    <title>Υπολογιστής Χαρτοκιβωτίων</title>
     <!-- Tailwind CSS for UI styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -59,7 +59,7 @@
         <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200 text-center relative">
             <div class="flex items-center justify-center gap-2">
                 <span class="text-3xl">📦</span>
-                <h1 class="text-xl md:text-2xl font-bold text-slate-900">Υπολογιστής Χαρτοκιβωτίων</h1>
+                <h1 class="text-xl md:text-2xl font-bold text-slate-900">Έξυπνος Υπολογιστής Χαρτοκιβωτίων</h1>
             </div>
             <p class="text-xs md:text-sm text-slate-500 mt-1">Αυτόματος υπολογισμός συσκευασίας (όριο <b>18 kg</b>), Google Sheets & Εκτύπωση Ετικετών.</p>
         </div>
@@ -359,7 +359,10 @@
                 document.getElementById('scriptUrl').value = url;
             }
 
-            fetch(url, { redirect: 'follow' })
+            // Append timestamp to prevent mobile browser HTTP caching
+            const fetchUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+
+            fetch(fetchUrl, { redirect: 'follow' })
                 .then(res => {
                     if (!res.ok) throw new Error('HTTP status ' + res.status);
                     return res.json();
