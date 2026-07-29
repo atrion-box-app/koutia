@@ -299,7 +299,6 @@
         <span id="toastMessage"></span>
     </div>
 
-    <!-- JAVASCRIPT LOGIC -->
     <script>
         // Default Google Script URL
         const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_9uSxN5ra8UNwCoZc1AwNQJEtQcYf_S1sfwPUa4ZXbFgxU4YtcE1l0zMw5u/exec';
@@ -350,16 +349,16 @@
         let currentCalculation = null;
 
         window.onload = function() {
-            // Check script URL
+            // Force reset to DEFAULT_SCRIPT_URL to clear any corrupted storage
             let savedUrl = localStorage.getItem('boxApp_scriptUrl');
-            if (!savedUrl || savedUrl.trim() === '' || !savedUrl.startsWith('http')) {
+            if (!savedUrl || !savedUrl.startsWith('http') || !savedUrl.includes('/exec')) {
                 savedUrl = DEFAULT_SCRIPT_URL;
                 localStorage.setItem('boxApp_scriptUrl', savedUrl);
             }
             document.getElementById('scriptUrl').value = savedUrl;
 
             renderBinsList();
-            fetchGoogleProjects();
+            fetchGoogleProjects(savedUrl);
         };
 
         function renderBinsList() {
@@ -414,24 +413,24 @@
                 return;
             }
             localStorage.setItem('boxApp_scriptUrl', url);
-            fetchGoogleProjects(false);
+            fetchGoogleProjects(url);
         }
 
-        function fetchGoogleProjects(retryWithDefault = true) {
-            let url = document.getElementById('scriptUrl').value.trim();
+        function fetchGoogleProjects(customUrl = null) {
+            let url = customUrl || document.getElementById('scriptUrl').value.trim() || DEFAULT_SCRIPT_URL;
             if (!url || !url.startsWith('http')) {
                 url = DEFAULT_SCRIPT_URL;
-                document.getElementById('scriptUrl').value = url;
-                localStorage.setItem('boxApp_scriptUrl', url);
             }
+
+            document.getElementById('scriptUrl').value = url;
+            localStorage.setItem('boxApp_scriptUrl', url);
 
             const badge = document.getElementById('connectionBadge');
             badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 animate-pulse";
             badge.innerHTML = "⏳ Φόρτωση Projects...";
 
-            const fetchUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
-
-            fetch(fetchUrl, { redirect: 'follow' })
+            // Clean fetch call without extra query params to prevent CORS redirect failures
+            fetch(url)
                 .then(res => {
                     if (!res.ok) throw new Error("HTTP " + res.status);
                     return res.json();
@@ -450,15 +449,12 @@
                     populateProjectDropdown(projects);
                     badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800";
                     badge.innerHTML = `🟢 Συνδέθηκε (${projects.length} Projects)`;
-                    localStorage.setItem('boxApp_scriptUrl', url);
                     showToast(`✅ Επιτυχής σύνδεση (${projects.length} Projects)!`);
                 })
                 .catch(err => {
-                    if (retryWithDefault && url !== DEFAULT_SCRIPT_URL) {
-                        // Fallback to DEFAULT_SCRIPT_URL if custom/saved URL fails
-                        document.getElementById('scriptUrl').value = DEFAULT_SCRIPT_URL;
-                        localStorage.setItem('boxApp_scriptUrl', DEFAULT_SCRIPT_URL);
-                        fetchGoogleProjects(false);
+                    // Fallback to DEFAULT_SCRIPT_URL if custom/saved URL failed
+                    if (url !== DEFAULT_SCRIPT_URL) {
+                        fetchGoogleProjects(DEFAULT_SCRIPT_URL);
                     } else {
                         badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800";
                         badge.innerHTML = "⚠️ Μη διαθέσιμο (Χειροκίνητη χρήση)";
