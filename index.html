@@ -35,7 +35,6 @@
                 height: 29mm !important;
                 overflow: hidden !important;
             }
-            /* Κρύβουμε όλα τα στοιχεία της σελίδας εκτός από το printSection */
             body > *:not(#printSection) {
                 display: none !important;
             }
@@ -81,7 +80,7 @@
         
         <!-- HEADER -->
         <header class="text-center mb-8 pb-6 border-b border-slate-200">
-            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">📦 Υπολογιστής Χαρτοκιβωτίων</h1>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">📦 Έξυπνος Υπολογιστής Χαρτοκιβωτίων</h1>
             <p class="text-slate-500 text-sm mt-1">Αυτόματος υπολογισμός συσκευασίας (όριο **18 kg**), Google Sheets & Εκτύπωση Ετικετών.</p>
         </header>
 
@@ -648,7 +647,7 @@
             });
         }
 
-        /* ΛΟΓΙΚΗ ΕΚΤΥΠΩΣΗΣ ΕΤΙΚΕΤΩΝ BROTHER (DK-11209) */
+        /* ΛΟΓΙΚΗ ΕΚΤΥΠΩΣΗΣ ΕΤΙΚΕΤΩΝ BROTHER (DK-11209 - PREMIUM INDUSTRIAL LAYOUT) */
         function openLabelsModal() {
             if (!lastCalculationSummary) return;
 
@@ -657,6 +656,7 @@
             const printSection = document.getElementById('printSection');
 
             const { projectName, totalBoxes, individualBoxes } = lastCalculationSummary;
+            const currentDate = new Date().toLocaleDateString('el-GR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
             let previewHtml = '';
             let printSectionHtml = '';
@@ -664,30 +664,37 @@
             individualBoxes.forEach((box, idx) => {
                 const labelNum = `${idx + 1}/${totalBoxes}`;
 
-                // Σχέδιο Ετικέτας (Βελτιστοποιημένο για 52mm x 23mm)
+                // Σχέδιο Ετικέτας - Premium Industrial Layout Χωρίς Barcode (52mm x 23mm)
                 const labelContent = `
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #000; padding-bottom: 1px; margin-bottom: 1px;">
-                        <span style="font-size: 10px; font-weight: 900; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38mm; line-height: 1;">${projectName}</span>
-                        <span style="font-size: 8px; font-weight: 800; background: #000; color: #fff; padding: 1px 3px; border-radius: 2px; line-height: 1;">${labelNum}</span>
+                    <!-- HEADER: Εταιρεία & Project & Badge -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #000; padding-bottom: 1px; margin-bottom: 1.5px;">
+                        <div style="display: flex; align-items: center; gap: 4px; overflow: hidden;">
+                            <span style="font-size: 7px; font-weight: 900; background: #000; color: #fff; padding: 0.5px 3px; border-radius: 1px; letter-spacing: 0.5px; line-height: 1;">ATRION</span>
+                            <span style="font-size: 9px; font-weight: 900; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 28mm; line-height: 1;">${projectName}</span>
+                        </div>
+                        <span style="font-size: 8.5px; font-weight: 900; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px; line-height: 1; letter-spacing: 0.5px;">${labelNum}</span>
                     </div>
 
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin: 1px 0;">
-                        <div style="border: 1px solid #000; padding: 1px 2px; border-radius: 2px; text-align: center; flex: 1; margin-right: 2px;">
-                            <span style="font-size: 5.5px; font-weight: 700; display: block; text-transform: uppercase; line-height: 1;">ΠΟΣΟΤΗΤΑ</span>
-                            <span style="font-size: 10.5px; font-weight: 900; line-height: 1;">${box.qty} <span style="font-size: 6.5px; font-weight: 600;">τμχ</span></span>
+                    <!-- MAIN INFO: Ποσότητα & Βάρος (Γιγάντιοι Αριθμοί) -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin: 1px 0; gap: 2px;">
+                        <div style="border: 1px solid #000; padding: 1px 2px; border-radius: 2px; text-align: center; flex: 1; background: #f8f8f8;">
+                            <span style="font-size: 5.5px; font-weight: 800; display: block; text-transform: uppercase; line-height: 1; color: #333;">ΠΟΣΟΤΗΤΑ</span>
+                            <span style="font-size: 11px; font-weight: 900; line-height: 1.1; display: block; color: #000;">${box.qty} <span style="font-size: 6.5px; font-weight: 700;">τμχ</span></span>
                         </div>
-                        <div style="border: 1px solid #000; padding: 1px 2px; border-radius: 2px; text-align: center; flex: 1;">
-                            <span style="font-size: 5.5px; font-weight: 700; display: block; text-transform: uppercase; line-height: 1;">ΒΑΡΟΣ</span>
-                            <span style="font-size: 10.5px; font-weight: 900; line-height: 1;">${box.weight} <span style="font-size: 6.5px; font-weight: 600;">kg</span></span>
+                        <div style="border: 1px solid #000; padding: 1px 2px; border-radius: 2px; text-align: center; flex: 1; background: #f8f8f8;">
+                            <span style="font-size: 5.5px; font-weight: 800; display: block; text-transform: uppercase; line-height: 1; color: #333;">ΒΑΡΟΣ</span>
+                            <span style="font-size: 11px; font-weight: 900; line-height: 1.1; display: block; color: #000;">${box.weight} <span style="font-size: 6.5px; font-weight: 700;">kg</span></span>
                         </div>
                     </div>
 
-                    <div style="font-size: 6.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; border-top: 1px solid #000; padding-top: 1px; margin-top: 1px; line-height: 1;">
-                        ${box.binName}
+                    <!-- FOOTER: Τύπος Κουτιού & Ημερομηνία -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #000; padding-top: 1px; margin-top: 1px; font-size: 6.5px; font-weight: 800; line-height: 1;">
+                        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38mm;">📦 ${box.binName}</span>
+                        <span style="font-size: 6px; font-weight: 700; color: #444;">${currentDate}</span>
                     </div>
                 `;
 
-                // Για την Προεπισκόπηση
+                // Για την Προεπισκόπηση στο Modal
                 previewHtml += `
                     <div class="bg-white p-3 rounded-lg border border-slate-300 shadow-sm flex items-center justify-between">
                         <div style="width: 58mm; height: 26mm; border: 1px solid #000; padding: 1.5mm; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; background: #fff;">
@@ -697,7 +704,7 @@
                     </div>
                 `;
 
-                // Για την Εκτύπωση
+                // Για την Εκτύπωση στον Θερμικό
                 printSectionHtml += `
                     <div class="thermal-label">
                         ${labelContent}
