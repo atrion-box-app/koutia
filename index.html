@@ -8,6 +8,9 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
     <!-- Tailwind CSS for UI styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js & OrbitControls for 3D Box Packing Visualization -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         body {
@@ -123,7 +126,7 @@
                         <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
                             <span>🏢</span> Διαθέσιμα Κουτιά Αποθήκης
                         </h2>
-                        <span id="binCountBadge" class="text-xs font-bold bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full">35 κουτιά</span>
+                        <span id="binCountBadge" class="text-xs font-bold bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full">32 κουτιά</span>
                     </div>
                     <p class="text-xs text-slate-500 mb-3">Προεπιλεγμένα τα 32 χαρτοκιβώτια της αποθήκης σας:</p>
                     
@@ -187,6 +190,33 @@
                             <div>
                                 <span class="text-[10px] text-slate-500 block">Ύψος (cm)</span>
                                 <input type="number" step="0.1" id="itemH" placeholder="π.χ. 10.5" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SAFETY TOLERANCES AND MARGINS (RIBBONS & CARTON LOSS) -->
+                    <div class="bg-indigo-50/70 p-3 rounded-xl border border-indigo-100 space-y-2.5">
+                        <span class="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
+                            <span>📐</span> Ανοχές Ασφαλείας & Αέρας Συσκευασίας
+                        </span>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-semibold text-indigo-900 mb-0.5" title="Προσθέτει αέρα για κορδέλες, φιόγκους ή bubble wrap">
+                                    🎁 Αέρας Προϊόντος (cm)
+                                </label>
+                                <div class="flex items-center gap-1">
+                                    <input type="number" step="0.1" id="itemMargin" value="1.0" class="w-full text-xs p-1.5 border border-indigo-200 rounded bg-white text-center font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                                </div>
+                                <span class="text-[9px] text-indigo-600 block mt-0.5">(π.χ. +1.0cm για κορδέλα)</span>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-semibold text-indigo-900 mb-0.5" title="Αφαιρείται από το κουτί λόγω πάχους χαρτονιού & ενώσεων">
+                                    📦 Απώλεια Κιβωτίου (cm)
+                                </label>
+                                <div class="flex items-center gap-1">
+                                    <input type="number" step="0.1" id="boxMargin" value="1.5" class="w-full text-xs p-1.5 border border-indigo-200 rounded bg-white text-center font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                                </div>
+                                <span class="text-[9px] text-indigo-600 block mt-0.5">(π.χ. -1.5cm εσωτερικός αέρας)</span>
                             </div>
                         </div>
                     </div>
@@ -299,6 +329,52 @@
         <span id="toastMessage"></span>
     </div>
 
+    <!-- 3D VISUALIZATION MODAL -->
+    <div id="modal3D" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-3 sm:p-4 z-50 no-print">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[95vh] flex flex-col overflow-hidden">
+            <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
+                <div>
+                    <h3 class="font-bold text-sm sm:text-base flex items-center gap-2">
+                        <span>🧊</span> 3D Αναπαράσταση Τοποθέτησης
+                    </h3>
+                    <p id="modal3DBoxName" class="text-xs text-sky-400 font-semibold mt-0.5"></p>
+                </div>
+                <button onclick="close3DModal()" class="text-slate-400 hover:text-white p-1 text-xl font-bold">&times;</button>
+            </div>
+            
+            <div class="p-4 bg-slate-950 flex-1 flex flex-col items-center justify-center relative">
+                <!-- 3D Canvas Container -->
+                <div id="threeCanvasContainer" class="w-full h-64 sm:h-80 rounded-xl overflow-hidden cursor-grab active:cursor-grabbing border border-slate-800"></div>
+                <div class="absolute bottom-6 left-6 text-[10px] text-slate-400 bg-slate-900/80 backdrop-blur px-2.5 py-1 rounded-md border border-slate-800 pointer-events-none">
+                    🖐️ Σύρετε με το ποντίκι / δάχτυλο για περιστροφή 3D
+                </div>
+            </div>
+
+            <!-- Packing Grid Info Panel -->
+            <div class="p-4 bg-slate-50 border-t border-slate-200 space-y-2 text-xs">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div class="bg-white p-2.5 rounded-lg border border-slate-200">
+                        <span class="text-[10px] text-slate-400 font-semibold block uppercase">Διάταξη Τοποθέτησης</span>
+                        <span id="modal3DGridInfo" class="font-bold text-slate-800"></span>
+                    </div>
+                    <div class="bg-white p-2.5 rounded-lg border border-slate-200">
+                        <span class="text-[10px] text-slate-400 font-semibold block uppercase">Προσανατολισμός 1 Τεμαχίου</span>
+                        <span id="modal3DOrientInfo" class="font-bold text-slate-800"></span>
+                    </div>
+                </div>
+                <div class="text-[11px] text-slate-600 bg-sky-50 border border-sky-200 p-2 rounded-lg flex items-center gap-1.5">
+                    <span>💡</span> <span id="modal3DCountInfo"></span>
+                </div>
+            </div>
+
+            <div class="p-3 border-t border-slate-200 bg-white flex justify-end">
+                <button onclick="close3DModal()" class="px-5 py-2 text-xs font-bold text-white bg-slate-800 hover:bg-slate-900 rounded-lg transition-colors">
+                    Κλείσιμο
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- JAVASCRIPT LOGIC -->
     <script>
         // Exact Correct Active Google Script URL
@@ -345,7 +421,6 @@
         let currentCalculation = null;
 
         window.onload = function() {
-            // Force replace stale/corrupted URL from localStorage with exact working DEFAULT_SCRIPT_URL
             let savedUrl = localStorage.getItem('boxApp_scriptUrl');
             if (!savedUrl || savedUrl !== DEFAULT_SCRIPT_URL) {
                 savedUrl = DEFAULT_SCRIPT_URL;
@@ -484,6 +559,8 @@
             ];
 
             let maxCount = 0;
+            let bestOrientation = orientations[0];
+            let bestGrid = { nx: 0, ny: 0, nz: 0 };
 
             orientations.forEach(([iL, iW, iH]) => {
                 const countL = Math.floor(binL / iL);
@@ -492,36 +569,59 @@
                 const total = countL * countW * countH;
                 if (total > maxCount) {
                     maxCount = total;
+                    bestOrientation = [iL, iW, iH];
+                    bestGrid = { nx: countL, ny: countW, nz: countH };
                 }
             });
 
-            return maxCount;
+            return { maxCount, bestOrientation, bestGrid };
         }
 
         function calculatePacking() {
-            const itemL = parseFloat(document.getElementById('itemL').value);
-            const itemW = parseFloat(document.getElementById('itemW').value);
-            const itemH = parseFloat(document.getElementById('itemH').value);
+            const rawItemL = parseFloat(document.getElementById('itemL').value);
+            const rawItemW = parseFloat(document.getElementById('itemW').value);
+            const rawItemH = parseFloat(document.getElementById('itemH').value);
             const itemWeight = parseFloat(document.getElementById('itemWeight').value);
             const totalQty = parseInt(document.getElementById('itemQty').value);
             const maxWeightLimit = parseFloat(document.getElementById('maxWeightLimit').value) || 18.0;
             const projectName = document.getElementById('projectNameInput').value.trim() || 'PROJECT / ΑΠΟΣΤΟΛΗ';
 
-            if (!itemL || !itemW || !itemH || !itemWeight || !totalQty || itemL <= 0 || itemW <= 0 || itemH <= 0 || itemWeight <= 0 || totalQty <= 0) {
+            // Safety Margins & Tolerances
+            const itemMargin = parseFloat(document.getElementById('itemMargin').value) || 0;
+            const boxMargin = parseFloat(document.getElementById('boxMargin').value) || 0;
+
+            if (!rawItemL || !rawItemW || !rawItemH || !itemWeight || !totalQty || rawItemL <= 0 || rawItemW <= 0 || rawItemH <= 0 || itemWeight <= 0 || totalQty <= 0) {
                 showToast("⚠️ Παρακαλώ συμπληρώστε όλα τα στοιχεία του προϊόντος με έγκυρες τιμές.");
                 return;
             }
 
-            // Find best fit per box option
+            // Effective Item Dimensions including Ribbon / Padding
+            const itemL = rawItemL + itemMargin;
+            const itemW = rawItemW + itemMargin;
+            const itemH = rawItemH + itemMargin;
+
+            // Find best fit per box option considering Box Flute / Inner Loss Margin
             let binEvaluations = availableBins.map(bin => {
-                const maxVolQty = calculateFitPerBox(itemL, itemW, itemH, bin.l, bin.w, bin.h);
+                const effectiveBinL = Math.max(0.1, bin.l - boxMargin);
+                const effectiveBinW = Math.max(0.1, bin.w - boxMargin);
+                const effectiveBinH = Math.max(0.1, bin.h - boxMargin);
+
+                const fitRes = calculateFitPerBox(itemL, itemW, itemH, effectiveBinL, effectiveBinW, effectiveBinH);
+                const maxVolQty = fitRes.maxCount;
                 const maxWeightQty = Math.floor(maxWeightLimit / itemWeight);
                 const fitPerBox = Math.min(maxVolQty, maxWeightQty);
-                return { bin, fitPerBox };
+                return { 
+                    bin, 
+                    fitPerBox,
+                    maxVolQty,
+                    orientation: fitRes.bestOrientation,
+                    grid: fitRes.bestGrid,
+                    effectiveBinDimensions: { l: effectiveBinL, w: effectiveBinW, h: effectiveBinH }
+                };
             }).filter(item => item.fitPerBox > 0);
 
             if (binEvaluations.length === 0) {
-                showToast("❌ Κανένα από τα διαθέσιμα κουτιά δεν μπορεί να χωρέσει ούτε 1 τεμάχιο!");
+                showToast("❌ Κανένα από τα διαθέσιμα κουτιά δεν μπορεί να χωρέσει ούτε 1 τεμάχιο με τις ανοχές που ορίσατε!");
                 return;
             }
 
@@ -540,6 +640,9 @@
                     bin: bestChoice.bin,
                     count: primaryFullBoxes,
                     itemsPerBox: bestChoice.fitPerBox,
+                    maxVolQty: bestChoice.maxVolQty,
+                    orientation: bestChoice.orientation,
+                    grid: bestChoice.grid,
                     totalItems: primaryFullBoxes * bestChoice.fitPerBox,
                     weightPerBox: (bestChoice.fitPerBox * itemWeight).toFixed(2),
                     isPartial: false
@@ -549,7 +652,6 @@
 
             // Handle remainder
             if (remainingQty > 0) {
-                // Find smallest box that fits remainingQty
                 let suitableSmaller = binEvaluations
                     .filter(e => e.fitPerBox >= remainingQty)
                     .sort((a, b) => (a.bin.l * a.bin.w * a.bin.h) - (b.bin.l * b.bin.w * b.bin.h));
@@ -560,6 +662,9 @@
                     bin: remainderChoice.bin,
                     count: 1,
                     itemsPerBox: remainingQty,
+                    maxVolQty: remainderChoice.maxVolQty,
+                    orientation: remainderChoice.orientation,
+                    grid: remainderChoice.grid,
                     totalItems: remainingQty,
                     weightPerBox: (remainingQty * itemWeight).toFixed(2),
                     isPartial: true
@@ -580,7 +685,7 @@
 
             renderResultsUI();
 
-            // Automatically send data to Google Sheet immediately after calculation!
+            // Automatically send data to Google Sheet immediately after calculation
             sendDataToSheet();
         }
 
@@ -596,10 +701,10 @@
             document.getElementById('printCountLabel').innerText = currentCalculation.totalBoxesCount;
 
             const breakdownDiv = document.getElementById('boxBreakdownList');
-            breakdownDiv.innerHTML = currentCalculation.packingPlan.map(p => `
-                <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+            breakdownDiv.innerHTML = currentCalculation.packingPlan.map((p, idx) => `
+                <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div class="flex items-center gap-3">
-                        <span class="w-8 h-8 rounded-lg ${p.isPartial ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'} font-black text-xs flex items-center justify-center">
+                        <span class="w-8 h-8 rounded-lg ${p.isPartial ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'} font-black text-xs flex items-center justify-center shrink-0">
                             ${p.count}x
                         </span>
                         <div>
@@ -612,8 +717,11 @@
                             </p>
                         </div>
                     </div>
-                    <div class="text-right">
-                        <span class="text-xs font-bold ${p.isPartial ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'} px-2 py-1 rounded-md inline-block">
+                    <div class="flex items-center gap-2 self-end sm:self-auto">
+                        <button onclick="open3DModal(${idx})" class="bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors border border-sky-200 flex items-center gap-1 shadow-2xs">
+                            <span>🧊</span> 3D Προβολή
+                        </button>
+                        <span class="text-xs font-bold ${p.isPartial ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'} px-2.5 py-1.5 rounded-lg">
                             ${p.weightPerBox} kg
                         </span>
                     </div>
@@ -622,6 +730,167 @@
 
             resDiv.scrollIntoView({ behavior: 'smooth' });
         }
+
+        /* 3D PACKING VISUALIZER LOGIC (THREE.JS) */
+        let threeScene, threeCamera, threeRenderer, threeControls, animationFrameId;
+
+        function open3DModal(planIndex) {
+            if (!currentCalculation || !currentCalculation.packingPlan[planIndex]) return;
+            const plan = currentCalculation.packingPlan[planIndex];
+
+            document.getElementById('modal3DBoxName').innerText = `${plan.bin.name} (${plan.bin.l} × ${plan.bin.w} × ${plan.bin.h} cm)`;
+            document.getElementById('modal3DGridInfo').innerText = `${plan.grid.nx} κατά μήκος × ${plan.grid.ny} κατά πλάτος × ${plan.grid.nz} καθ' ύψος`;
+            document.getElementById('modal3DOrientInfo').innerText = `${plan.orientation[0]} cm × ${plan.orientation[1]} cm × ${plan.orientation[2]} cm`;
+            document.getElementById('modal3DCountInfo').innerText = `Τοποθετούνται ${plan.itemsPerBox} τμχ στο κουτί (${plan.weightPerBox} kg).`;
+
+            document.getElementById('modal3D').classList.remove('hidden');
+
+            // Timeout ensures modal DOM is rendered before computing dimensions
+            setTimeout(() => {
+                init3DScene(plan);
+            }, 50);
+        }
+
+        function init3DScene(plan) {
+            const container = document.getElementById('threeCanvasContainer');
+            container.innerHTML = ''; // Clear previous canvas
+
+            const width = container.clientWidth || 500;
+            const height = container.clientHeight || 320;
+
+            threeScene = new THREE.Scene();
+            threeScene.background = new THREE.Color(0x0b132b); // Dark sleek background
+
+            threeCamera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+
+            threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            threeRenderer.setSize(width, height);
+            threeRenderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(threeRenderer.domElement);
+
+            // Orbit Controls
+            if (window.THREE.OrbitControls) {
+                threeControls = new THREE.OrbitControls(threeCamera, threeRenderer.domElement);
+                threeControls.enableDamping = true;
+                threeControls.dampingFactor = 0.08;
+            }
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            threeScene.add(ambientLight);
+
+            const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight1.position.set(100, 150, 100);
+            threeScene.add(dirLight1);
+
+            const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 0.4);
+            dirLight2.position.set(-100, -100, -100);
+            threeScene.add(dirLight2);
+
+            // Outer Carton (Wireframe & Transparent Shell)
+            const binL = plan.bin.l;
+            const binW = plan.bin.w;
+            const binH = plan.bin.h;
+
+            const boxGeo = new THREE.BoxGeometry(binL, binH, binW); // Three.js Y is height, Z is width
+            const boxEdges = new THREE.EdgesGeometry(boxGeo);
+            const lineMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 });
+            const wireframe = new THREE.LineSegments(boxEdges, lineMat);
+            threeScene.add(wireframe);
+
+            const boxMat = new THREE.MeshPhongMaterial({
+                color: 0x0284c7,
+                transparent: true,
+                opacity: 0.12,
+                side: THREE.DoubleSide
+            });
+            const boxMesh = new THREE.Mesh(boxGeo, boxMat);
+            threeScene.add(boxMesh);
+
+            // Item Grid Stacking
+            const [iL, iW, iH] = plan.orientation;
+            const { nx, ny, nz } = plan.grid;
+            const maxItems = plan.itemsPerBox;
+
+            const itemsGroup = new THREE.Group();
+
+            const startX = -binL / 2 + iL / 2;
+            const startY = -binH / 2 + iH / 2;
+            const startZ = -binW / 2 + iW / 2;
+
+            let placedCount = 0;
+            const itemGeo = new THREE.BoxGeometry(iL - 0.2, iH - 0.2, iW - 0.2); // Small gap for line separation
+            const itemMat = new THREE.MeshStandardMaterial({
+                color: 0x10b981, // Emerald green
+                roughness: 0.3,
+                metalness: 0.1
+            });
+            const itemEdges = new THREE.EdgesGeometry(itemGeo);
+            const itemEdgeMat = new THREE.LineBasicMaterial({ color: 0x064e3b });
+
+            for (let iz = 0; iz < nz && placedCount < maxItems; iz++) {
+                for (let iy = 0; iy < ny && placedCount < maxItems; iy++) {
+                    for (let ix = 0; ix < nx && placedCount < maxItems; ix++) {
+                        const itemMesh = new THREE.Mesh(itemGeo, itemMat);
+                        itemMesh.position.set(
+                            startX + ix * iL,
+                            startY + iz * iH, // iz is height layer
+                            startZ + iy * iW
+                        );
+
+                        const edgeLine = new THREE.LineSegments(itemEdges, itemEdgeMat);
+                        itemMesh.add(edgeLine);
+
+                        itemsGroup.add(itemMesh);
+                        placedCount++;
+                    }
+                }
+            }
+
+            threeScene.add(itemsGroup);
+
+            // Camera positioning
+            const maxDim = Math.max(binL, binW, binH);
+            threeCamera.position.set(maxDim * 1.5, maxDim * 1.3, maxDim * 1.8);
+            threeCamera.lookAt(0, 0, 0);
+
+            if (threeControls) {
+                threeControls.target.set(0, 0, 0);
+                threeControls.update();
+            }
+
+            // Render loop
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+            function animate() {
+                animationFrameId = requestAnimationFrame(animate);
+                if (threeControls) threeControls.update();
+                itemsGroup.rotation.y += 0.003;
+                wireframe.rotation.y += 0.003;
+                boxMesh.rotation.y += 0.003;
+                threeRenderer.render(threeScene, threeCamera);
+            }
+            animate();
+        }
+
+        function close3DModal() {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            document.getElementById('modal3D').classList.add('hidden');
+        }
+
+        // Resize handler for 3D Canvas
+        window.addEventListener('resize', () => {
+            if (threeScene && threeCamera && threeRenderer && !document.getElementById('modal3D').classList.contains('hidden')) {
+                const container = document.getElementById('threeCanvasContainer');
+                if (container) {
+                    const w = container.clientWidth;
+                    const h = container.clientHeight;
+                    threeCamera.aspect = w / h;
+                    threeCamera.updateProjectionMatrix();
+                    threeRenderer.setSize(w, h);
+                }
+            }
+        });
 
         function sendDataToSheet() {
             if (!currentCalculation) return;
