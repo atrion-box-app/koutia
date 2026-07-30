@@ -90,7 +90,7 @@
                 <span>📦</span> Υπολογιστής Χαρτοκιβωτίων
             </h1>
             <p class="text-xs sm:text-sm text-slate-500 mt-1">
-                Αυτόματος υπολογισμός συσκευασίας (όριο <b>18 kg</b>), Google Sheets & Εκτύπωση Ετικετών.
+                Βέλτιστη επιλογή κιβωτίων βάσει <b>Όγκου & Ογκομετρικού Βάρους (όριο 18 kg)</b>, Google Sheets & Εκτύπωση.
             </p>
         </div>
 
@@ -233,14 +233,25 @@
                         </div>
                     </div>
 
-                    <!-- MAX WEIGHT PER BOX -->
-                    <div class="bg-amber-100/50 p-2.5 rounded-lg border border-amber-200 flex items-center justify-between">
-                        <label class="text-xs font-bold text-amber-900 flex items-center gap-1.5">
-                            <span>⚖️</span> Μέγιστο Επιτρεπτό Βάρος / Κιβώτιο:
-                        </label>
-                        <div class="flex items-center gap-1">
-                            <input type="number" id="maxWeightLimit" value="18" class="w-16 text-xs p-1 text-center font-bold border border-amber-300 rounded bg-white focus:outline-none">
-                            <span class="text-xs font-bold text-amber-900">kg</span>
+                    <!-- TRANSPORT & WEIGHT LIMITS -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="bg-amber-100/50 p-2 rounded-lg border border-amber-200">
+                            <label class="block text-[10px] font-bold text-amber-900 mb-1">
+                                ⚖️ Όριο Βάρους / Κιβώτιο
+                            </label>
+                            <div class="flex items-center gap-1">
+                                <input type="number" id="maxWeightLimit" value="18" class="w-full text-xs p-1 text-center font-bold border border-amber-300 rounded bg-white focus:outline-none">
+                                <span class="text-xs font-bold text-amber-900">kg</span>
+                            </div>
+                        </div>
+                        <div class="bg-sky-100/50 p-2 rounded-lg border border-sky-200">
+                            <label class="block text-[10px] font-bold text-sky-900 mb-1" title="Διαιρέτης Ογκομετρικού Βάρους (Courier / Μεταφορικές)">
+                                🚚 Συντελεστής Ογκομέτρησης
+                            </label>
+                            <div class="flex items-center gap-1">
+                                <span class="text-[10px] text-sky-700">/</span>
+                                <input type="number" id="volumetricFactor" value="5000" class="w-full text-xs p-1 text-center font-bold border border-sky-300 rounded bg-white focus:outline-none">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -261,14 +272,18 @@
                         Απαιτούνται συνολικά 0 κιβώτια
                     </h3>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                     <div class="text-center px-3 py-1.5 bg-slate-100 rounded-lg">
-                        <span class="text-[10px] text-slate-500 block">Συνολικό Βάρος</span>
+                        <span class="text-[10px] text-slate-500 block">Πραγματικό Βάρος</span>
                         <span id="totalWeightBadge" class="text-xs font-bold text-slate-800">0.00 kg</span>
                     </div>
-                    <div class="text-center px-3 py-1.5 bg-slate-100 rounded-lg">
-                        <span class="text-[10px] text-slate-500 block">Συνολικά Τεμάχια</span>
-                        <span id="totalItemsBadge" class="text-xs font-bold text-slate-800">0 τμχ</span>
+                    <div class="text-center px-3 py-1.5 bg-sky-50 border border-sky-200 rounded-lg">
+                        <span class="text-[10px] text-sky-600 block">Ογκομετρικό Βάρος</span>
+                        <span id="totalVolWeightBadge" class="text-xs font-bold text-sky-900">0.00 kg</span>
+                    </div>
+                    <div class="text-center px-3 py-1.5 bg-indigo-100 border border-indigo-200 rounded-lg">
+                        <span class="text-[10px] text-indigo-700 block font-bold">Χρεώσιμο Βάρος</span>
+                        <span id="totalChargeableBadge" class="text-xs font-extrabold text-indigo-900">0.00 kg</span>
                     </div>
                 </div>
             </div>
@@ -362,8 +377,9 @@
                         <span id="modal3DOrientInfo" class="font-bold text-slate-800"></span>
                     </div>
                 </div>
-                <div class="text-[11px] text-slate-600 bg-sky-50 border border-sky-200 p-2 rounded-lg flex items-center gap-1.5">
-                    <span>💡</span> <span id="modal3DCountInfo"></span>
+                <div class="text-[11px] text-slate-600 bg-sky-50 border border-sky-200 p-2 rounded-lg flex items-center justify-between gap-1.5">
+                    <div><span>💡</span> <span id="modal3DCountInfo"></span></div>
+                    <span id="modal3DFillRateBadge" class="text-xs font-bold text-sky-800 bg-sky-100 px-2 py-0.5 rounded"></span>
                 </div>
             </div>
 
@@ -375,6 +391,7 @@
         </div>
     </div>
 
+    <!-- STREAMING_CHUNK:Adding JavaScript execution logic... -->
     <!-- JAVASCRIPT LOGIC -->
     <script>
         // Exact Correct Active Google Script URL
@@ -467,51 +484,50 @@
             document.getElementById('binH').value = '';
             showToast("✅ Το χαρτοκιβώτιο προστέθηκε στη λίστα!");
         }
-                const bestChoice = candidates[0];
-                const fullBoxesCount = Math.floor(remainingQty / bestChoice.itemsToPut);
 
-                if (fullBoxesCount > 0) {
-                    packingPlan.push({
-                        bin: bestChoice.bin,
-                        count: fullBoxesCount,
-                        itemsPerBox: bestChoice.itemsToPut,
-                        maxVolQty: bestChoice.maxVolQty,
-                        orientation: bestChoice.orientation,
-                        grid: bestChoice.grid,
-                        totalItems: fullBoxesCount * bestChoice.itemsToPut,
-                        weightPerBox: (bestChoice.itemsToPut * itemWeight).toFixed(2),
-                        volWeightPerBox: bestChoice.volWeight.toFixed(2),
-                        chargeableWeightPerBox: Math.max(bestChoice.itemsToPut * itemWeight, bestChoice.volWeight).toFixed(2),
-                        fillRatePercent: (bestChoice.fillRate * 100).toFixed(1),
-                        isPartial: false
-                    });
-                    remainingQty -= (fullBoxesCount * bestChoice.itemsToPut);
-                } else {
-                    // Remaining items < fitPerBox: Pick the smallest box that fits all remaining items
-                    let suitableRemainder = candidates
-                        .filter(c => c.fitPerBox >= remainingQty)
-                        .sort((a, b) => a.binVol - b.binVol);
+        function removeBin(id) {
+            if (availableBins.length <= 1) {
+                showToast("⚠️ Πρέπει να υπάρχει τουλάχιστον 1 χαρτοκιβώτιο στη λίστα.");
+                return;
+            }
+            availableBins = availableBins.filter(b => b.id !== id);
+            renderBinsList();
+        }
 
-                    let remainderChoice = suitableRemainder.length > 0 ? suitableRemainder[0] : bestChoice;
-                    const remPackedVol = remainingQty * singleItemVol;
-                    const remFillRate = remPackedVol / remainderChoice.binVol;
+        function saveAndFetchProjects() {
+            const url = document.getElementById('scriptUrl').value.trim();
+            if (!url || !url.startsWith('http')) {
+                showToast("⚠️ Παρακαλώ εισάγετε έγκυρο Web App URL.");
+                return;
+            }
+            localStorage.setItem('boxApp_scriptUrl', url);
+            fetchGoogleProjects(url);
+        }
 
-                    packingPlan.push({
-                        bin: remainderChoice.bin,
-                        count: 1,
-                        itemsPerBox: remainingQty,
-                        maxVolQty: remainderChoice.maxVolQty,
-                        orientation: remainderChoice.orientation,
-                        grid: remainderChoice.grid,
-                        totalItems: remainingQty,
-                        weightPerBox: (remainingQty * itemWeight).toFixed(2),
-                        volWeightPerBox: remainderChoice.volWeight.toFixed(2),
-                        chargeableWeightPerBox: Math.max(remainingQty * itemWeight, remainderChoice.volWeight).toFixed(2),
-                        fillRatePercent: (remFillRate * 100).toFixed(1),
-                        isPartial: true
-                    });
-                    remainingQty = 0;
-                }
+        function fetchGoogleProjects(customUrl = null) {
+            let url = customUrl || document.getElementById('scriptUrl').value.trim() || DEFAULT_SCRIPT_URL;
+
+            document.getElementById('scriptUrl').value = url;
+            localStorage.setItem('boxApp_scriptUrl', url);
+
+            const badge = document.getElementById('connectionBadge');
+            badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 animate-pulse";
+            badge.innerHTML = "⏳ Φόρτωση Projects...";
+
+            fetch(url)
+                .then(res => {
+                    if (!res.ok) throw new Error("HTTP " + res.status);
+                    return res.json();
+                })
+                .then(data => {
+                    let projects = [];
+                    if (Array.isArray(data)) {
+                        projects = data;
+                    } else if (data && data.projects && Array.isArray(data.projects)) {
+                        projects = data.projects;
+                    } else {
+                        throw new Error("Invalid format");
+                    }
 
                     googleProjects = projects;
                     populateProjectDropdown(projects);
@@ -585,6 +601,7 @@
             const itemWeight = parseFloat(document.getElementById('itemWeight').value);
             const totalQty = parseInt(document.getElementById('itemQty').value);
             const maxWeightLimit = parseFloat(document.getElementById('maxWeightLimit').value) || 18.0;
+            const volFactor = parseFloat(document.getElementById('volumetricFactor').value) || 5000;
             const projectName = document.getElementById('projectNameInput').value.trim() || 'PROJECT / ΑΠΟΣΤΟΛΗ';
 
             // Safety Margins & Tolerances
@@ -600,8 +617,9 @@
             const itemL = rawItemL + itemMargin;
             const itemW = rawItemW + itemMargin;
             const itemH = rawItemH + itemMargin;
+            const singleItemVol = itemL * itemW * itemH;
 
-            // Find best fit per box option considering Box Flute / Inner Loss Margin
+            // Evaluate all available boxes
             let binEvaluations = availableBins.map(bin => {
                 const effectiveBinL = Math.max(0.1, bin.l - boxMargin);
                 const effectiveBinW = Math.max(0.1, bin.w - boxMargin);
@@ -611,10 +629,15 @@
                 const maxVolQty = fitRes.maxCount;
                 const maxWeightQty = Math.floor(maxWeightLimit / itemWeight);
                 const fitPerBox = Math.min(maxVolQty, maxWeightQty);
+                const binVol = bin.l * bin.w * bin.h;
+                const volWeight = binVol / volFactor;
+
                 return { 
                     bin, 
                     fitPerBox,
                     maxVolQty,
+                    binVol,
+                    volWeight,
                     orientation: fitRes.bestOrientation,
                     grid: fitRes.bestGrid,
                     effectiveBinDimensions: { l: effectiveBinL, w: effectiveBinW, h: effectiveBinH }
@@ -626,60 +649,103 @@
                 return;
             }
 
-            // Sort by highest capacity per box
-            binEvaluations.sort((a, b) => b.fitPerBox - a.fitPerBox);
-
             let remainingQty = totalQty;
             let packingPlan = [];
 
-            // Primary box strategy
-            const bestChoice = binEvaluations[0];
-            const primaryFullBoxes = Math.floor(remainingQty / bestChoice.fitPerBox);
+            // MULTI-TIER PACKING ALGORITHM
+            while (remainingQty > 0) {
+                let candidates = binEvaluations.map(e => {
+                    const itemsToPut = Math.min(e.fitPerBox, remainingQty);
+                    const packedVol = itemsToPut * singleItemVol;
+                    const fillRate = packedVol / e.binVol;
+                    const realWeight = itemsToPut * itemWeight;
+                    const volWeight = e.volWeight;
+                    const chargeableWeight = Math.max(realWeight, volWeight);
 
-            if (primaryFullBoxes > 0) {
-                packingPlan.push({
-                    bin: bestChoice.bin,
-                    count: primaryFullBoxes,
-                    itemsPerBox: bestChoice.fitPerBox,
-                    maxVolQty: bestChoice.maxVolQty,
-                    orientation: bestChoice.orientation,
-                    grid: bestChoice.grid,
-                    totalItems: primaryFullBoxes * bestChoice.fitPerBox,
-                    weightPerBox: (bestChoice.fitPerBox * itemWeight).toFixed(2),
-                    isPartial: false
+                    return {
+                        ...e,
+                        itemsToPut,
+                        packedVol,
+                        fillRate,
+                        realWeight,
+                        volWeight,
+                        chargeableWeight
+                    };
                 });
-                remainingQty -= (primaryFullBoxes * bestChoice.fitPerBox);
-            }
 
-            // Handle remainder
-            if (remainingQty > 0) {
-                let suitableSmaller = binEvaluations
-                    .filter(e => e.fitPerBox >= remainingQty)
-                    .sort((a, b) => (a.bin.l * a.bin.w * a.bin.h) - (b.bin.l * b.bin.w * b.bin.h));
-
-                let remainderChoice = suitableSmaller.length > 0 ? suitableSmaller[0] : bestChoice;
-
-                packingPlan.push({
-                    bin: remainderChoice.bin,
-                    count: 1,
-                    itemsPerBox: remainingQty,
-                    maxVolQty: remainderChoice.maxVolQty,
-                    orientation: remainderChoice.orientation,
-                    grid: remainderChoice.grid,
-                    totalItems: remainingQty,
-                    weightPerBox: (remainingQty * itemWeight).toFixed(2),
-                    isPartial: true
+                // SORTING RULES:
+                // 1. Maximizes items packed per box
+                // 2. Selects the SMALLEST box volume
+                // 3. Maximizes Volume Fill Rate %
+                candidates.sort((a, b) => {
+                    if (b.itemsToPut !== a.itemsToPut) {
+                        return b.itemsToPut - a.itemsToPut;
+                    }
+                    if (a.binVol !== b.binVol) {
+                        return a.binVol - b.binVol;
+                    }
+                    return b.fillRate - a.fillRate;
                 });
+
+                const bestChoice = candidates[0];
+                const fullBoxesCount = Math.floor(remainingQty / bestChoice.itemsToPut);
+
+                if (fullBoxesCount > 0) {
+                    packingPlan.push({
+                        bin: bestChoice.bin,
+                        count: fullBoxesCount,
+                        itemsPerBox: bestChoice.itemsToPut,
+                        maxVolQty: bestChoice.maxVolQty,
+                        orientation: bestChoice.orientation,
+                        grid: bestChoice.grid,
+                        totalItems: fullBoxesCount * bestChoice.itemsToPut,
+                        weightPerBox: (bestChoice.itemsToPut * itemWeight).toFixed(2),
+                        volWeightPerBox: bestChoice.volWeight.toFixed(2),
+                        chargeableWeightPerBox: Math.max(bestChoice.itemsToPut * itemWeight, bestChoice.volWeight).toFixed(2),
+                        fillRatePercent: (bestChoice.fillRate * 100).toFixed(1),
+                        isPartial: false
+                    });
+                    remainingQty -= (fullBoxesCount * bestChoice.itemsToPut);
+                } else {
+                    // Remaining items < fitPerBox: Pick the smallest box that fits remaining items
+                    let suitableRemainder = candidates
+                        .filter(c => c.fitPerBox >= remainingQty)
+                        .sort((a, b) => a.binVol - b.binVol);
+
+                    let remainderChoice = suitableRemainder.length > 0 ? suitableRemainder[0] : bestChoice;
+                    const remPackedVol = remainingQty * singleItemVol;
+                    const remFillRate = remPackedVol / remainderChoice.binVol;
+
+                    packingPlan.push({
+                        bin: remainderChoice.bin,
+                        count: 1,
+                        itemsPerBox: remainingQty,
+                        maxVolQty: remainderChoice.maxVolQty,
+                        orientation: remainderChoice.orientation,
+                        grid: remainderChoice.grid,
+                        totalItems: remainingQty,
+                        weightPerBox: (remainingQty * itemWeight).toFixed(2),
+                        volWeightPerBox: remainderChoice.volWeight.toFixed(2),
+                        chargeableWeightPerBox: Math.max(remainingQty * itemWeight, remainderChoice.volWeight).toFixed(2),
+                        fillRatePercent: (remFillRate * 100).toFixed(1),
+                        isPartial: true
+                    });
+                    remainingQty = 0;
+                }
             }
 
             const totalBoxesCount = packingPlan.reduce((acc, curr) => acc + curr.count, 0);
             const totalWeight = (totalQty * itemWeight).toFixed(2);
+            const totalVolWeight = packingPlan.reduce((acc, curr) => acc + (parseFloat(curr.volWeightPerBox) * curr.count), 0).toFixed(2);
+            const totalChargeable = packingPlan.reduce((acc, curr) => acc + (parseFloat(curr.chargeableWeightPerBox) * curr.count), 0).toFixed(2);
 
             currentCalculation = {
                 projectName,
                 totalQty,
                 itemWeight,
                 totalWeight,
+                totalVolWeight,
+                totalChargeable,
                 totalBoxesCount,
                 packingPlan
             };
@@ -698,40 +764,56 @@
 
             document.getElementById('totalBoxesHeader').innerText = `Απαιτούνται συνολικά ${currentCalculation.totalBoxesCount} κιβώτιο/α`;
             document.getElementById('totalWeightBadge').innerText = `${currentCalculation.totalWeight} kg`;
-            document.getElementById('totalItemsBadge').innerText = `${currentCalculation.totalQty} τμχ`;
+            document.getElementById('totalVolWeightBadge').innerText = `${currentCalculation.totalVolWeight} kg`;
+            document.getElementById('totalChargeableBadge').innerText = `${currentCalculation.totalChargeable} kg`;
             document.getElementById('printCountLabel').innerText = currentCalculation.totalBoxesCount;
 
             const breakdownDiv = document.getElementById('boxBreakdownList');
-            breakdownDiv.innerHTML = currentCalculation.packingPlan.map((p, idx) => `
-                <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div class="flex items-center gap-3">
-                        <span class="w-8 h-8 rounded-lg ${p.isPartial ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'} font-black text-xs flex items-center justify-center shrink-0">
-                            ${p.count}x
-                        </span>
-                        <div>
-                            <h4 class="text-xs font-bold text-slate-800">
-                                ${p.bin.name} 
-                                <span class="text-[10px] text-slate-400 font-normal">(${p.bin.l} x ${p.bin.w} x ${p.bin.h} cm)</span>
-                            </h4>
-                            <p class="text-[11px] text-slate-500">
-                                Περιέχει <b>${p.itemsPerBox} τμχ</b> ανά κιβώτιο ${p.isPartial ? '<span class="text-amber-600 font-semibold">(υπόλοιπο)</span>' : ''}
-                            </p>
+            breakdownDiv.innerHTML = currentCalculation.packingPlan.map((p, idx) => {
+                const isVolumetricPenalized = parseFloat(p.volWeightPerBox) > parseFloat(p.weightPerBox);
+                return `
+                    <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 h-8 rounded-lg ${p.isPartial ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'} font-black text-xs flex items-center justify-center shrink-0">
+                                ${p.count}x
+                            </span>
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                    ${p.bin.name} 
+                                    <span class="text-[10px] text-slate-400 font-normal">(${p.bin.l} x ${p.bin.w} x ${p.bin.h} cm)</span>
+                                </h4>
+                                <div class="flex flex-wrap items-center gap-2 mt-0.5">
+                                    <span class="text-[11px] text-slate-500">
+                                        Περιέχει <b>${p.itemsPerBox} τμχ</b> ανά κιβώτιο ${p.isPartial ? '<span class="text-amber-600 font-semibold">(υπόλοιπο)</span>' : ''}
+                                    </span>
+                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-800" title="Πληρότητα Όγκου Κιβωτίου">
+                                        📊 ${p.fillRatePercent}% πλήρες
+                                    </span>
+                                    ${isVolumetricPenalized ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800" title="Το ογκομετρικό βάρος υπερβαίνει το πραγματικό">⚠️ Ογκομετρική Χρέωση</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 self-end sm:self-auto">
+                            <button onclick="open3DModal(${idx})" class="bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors border border-sky-200 flex items-center gap-1 shadow-2xs">
+                                <span>🧊</span> 3D Προβολή
+                            </button>
+                            <div class="text-right">
+                                <span class="text-xs font-extrabold block text-slate-800">
+                                    ${p.weightPerBox} kg <span class="text-[10px] text-slate-400 font-normal">(πραγματικό)</span>
+                                </span>
+                                <span class="text-[10px] font-semibold text-sky-700 block">
+                                    ${p.volWeightPerBox} kg <span class="text-[9px] text-sky-500">(ογκομετρικό)</span>
+                                </span>
+                            </div>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2 self-end sm:self-auto">
-                        <button onclick="open3DModal(${idx})" class="bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors border border-sky-200 flex items-center gap-1 shadow-2xs">
-                            <span>🧊</span> 3D Προβολή
-                        </button>
-                        <span class="text-xs font-bold ${p.isPartial ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'} px-2.5 py-1.5 rounded-lg">
-                            ${p.weightPerBox} kg
-                        </span>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
 
             resDiv.scrollIntoView({ behavior: 'smooth' });
         }
 
+        /* 3D PACKING VISUALIZER LOGIC (THREE.JS) */
         let threeScene, threeCamera, threeRenderer, threeControls, animationFrameId;
 
         function open3DModal(planIndex) {
@@ -745,7 +827,8 @@
             document.getElementById('modal3DBoxName').innerText = `${plan.bin.name} (${plan.bin.l} × ${plan.bin.w} × ${plan.bin.h} cm)`;
             document.getElementById('modal3DGridInfo').innerText = `${nx} κατά μήκος × ${ny} κατά πλάτος × ${actualNz} καθ' ύψος${actualNz < plan.grid.nz ? ` (χωρητικότητα έως ${plan.grid.nz})` : ''}`;
             document.getElementById('modal3DOrientInfo').innerText = `${plan.orientation[0]} cm × ${plan.orientation[1]} cm × ${plan.orientation[2]} cm`;
-            document.getElementById('modal3DCountInfo').innerText = `Τοποθετούνται ${plan.itemsPerBox} τμχ στο κουτί (${plan.weightPerBox} kg).`;
+            document.getElementById('modal3DCountInfo').innerText = `Τοποθετούνται ${plan.itemsPerBox} τμχ στο κουτί (${plan.weightPerBox} kg | Ογκομετρικό: ${plan.volWeightPerBox} kg).`;
+            document.getElementById('modal3DFillRateBadge').innerText = `Πληρότητα: ${plan.fillRatePercent}%`;
 
             document.getElementById('modal3D').classList.remove('hidden');
 
@@ -901,7 +984,7 @@
             }
 
             let columnKText = currentCalculation.packingPlan.map(p => {
-                return `${p.count}x ${p.bin.name} (${p.itemsPerBox}τμχ/${p.weightPerBox}kg)`;
+                return `${p.count}x ${p.bin.name} (${p.itemsPerBox}τμχ/${p.weightPerBox}kg/Ογκ:${p.volWeightPerBox}kg)`;
             }).join(' + ');
 
             const payload = {
@@ -1051,12 +1134,12 @@
 
             let text = `📦 ΥΠΟΛΟΓΙΣΜΟΣ ΣΥΣΚΕΥΑΣΙΑΣ: ${currentCalculation.projectName}\n`;
             text += `----------------------------------------\n`;
-            text += `Συνολικά Τεμάχια: ${currentCalculation.totalQty} τμχ | Συνολικό Βάρος: ${currentCalculation.totalWeight} kg\n`;
+            text += `Συνολικά Τεμάχια: ${currentCalculation.totalQty} τμχ | Πραγματικό Βάρος: ${currentCalculation.totalWeight} kg | Ογκομετρικό: ${currentCalculation.totalVolWeight} kg | Χρεώσιμο: ${currentCalculation.totalChargeable} kg\n`;
             text += `Απαιτούμενα Κιβώτια: ${currentCalculation.totalBoxesCount}\n\n`;
 
             currentCalculation.packingPlan.forEach(p => {
                 const cleanBoxName = p.bin.name.replace(/κούτα|κουτί/gi, 'Συσκευασία');
-                text += `• ${p.count}x ${cleanBoxName} (${p.bin.l}x${p.bin.w}x${p.bin.h}cm) -> ${p.itemsPerBox}τμχ/κιβώτιο (${p.weightPerBox}kg)\n`;
+                text += `• ${p.count}x ${cleanBoxName} (${p.bin.l}x${p.bin.w}x${p.bin.h}cm) -> ${p.itemsPerBox}τμχ/κιβώτιο (${p.weightPerBox}kg | Ογκ: ${p.volWeightPerBox}kg | Πληρότητα: ${p.fillRatePercent}%)\n`;
             });
 
             const textarea = document.createElement('textarea');
@@ -1087,3 +1170,14 @@
     </script>
 </body>
 </html>
+```eof
+
+### 📋 Τι έγινε & πώς να το ανεβάσετε στο GitHub:
+
+1. Ανοίξτε το **GitHub** στο αρχείο `index.html`.
+2. Πατήστε το **μολύβι (Edit)**.
+3. Επιλέξτε τα πάντα με **Ctrl + A** και πατήστε **Delete**.
+4. Αντιγράψτε τον παραπάνω κώδικα και κάντε **Ctrl + V** (επικόλληση).
+5. Πατήστε **Commit changes...**.
+
+Μόλις αποθηκευτεί (σε 20-30 δευτερόλεπτα), κάντε **Refresh** στην ιστοσελίδα. Το πρόγραμμα θα φορτώσει αμέσως τη λίστα με τα 32 κουτιά και τη σύνδεση με το Google Sheets!
