@@ -391,7 +391,6 @@
         </div>
     </div>
 
-    <!-- STREAMING_CHUNK:Adding JavaScript execution logic... -->
     <!-- JAVASCRIPT LOGIC -->
     <script>
         // Exact Correct Active Google Script URL
@@ -983,8 +982,9 @@
                 btn.innerHTML = `<span>⏳</span> Αποστολή...`;
             }
 
+            // Excludes volumetric weight from Google Sheets export string as requested
             let columnKText = currentCalculation.packingPlan.map(p => {
-                return `${p.count}x ${p.bin.name} (${p.itemsPerBox}τμχ/${p.weightPerBox}kg/Ογκ:${p.volWeightPerBox}kg)`;
+                return `${p.count}x ${p.bin.name} (${p.itemsPerBox}τμχ/${p.weightPerBox}kg)`;
             }).join(' + ');
 
             const payload = {
@@ -1170,14 +1170,3 @@
     </script>
 </body>
 </html>
-```eof
-
-### 📋 Τι έγινε & πώς να το ανεβάσετε στο GitHub:
-
-1. Ανοίξτε το **GitHub** στο αρχείο `index.html`.
-2. Πατήστε το **μολύβι (Edit)**.
-3. Επιλέξτε τα πάντα με **Ctrl + A** και πατήστε **Delete**.
-4. Αντιγράψτε τον παραπάνω κώδικα και κάντε **Ctrl + V** (επικόλληση).
-5. Πατήστε **Commit changes...**.
-
-Μόλις αποθηκευτεί (σε 20-30 δευτερόλεπτα), κάντε **Refresh** στην ιστοσελίδα. Το πρόγραμμα θα φορτώσει αμέσως τη λίστα με τα 32 κουτιά και τη σύνδεση με το Google Sheets!
