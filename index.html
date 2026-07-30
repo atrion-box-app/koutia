@@ -125,7 +125,7 @@
                         </h2>
                         <span id="binCountBadge" class="text-xs font-bold bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full">35 κουτιά</span>
                     </div>
-                    <p class="text-xs text-slate-500 mb-3">Προεπιλεγμένα τα 35 χαρτοκιβώτια της αποθήκης σας:</p>
+                    <p class="text-xs text-slate-500 mb-3">Προεπιλεγμένα τα 32 χαρτοκιβώτια της αποθήκης σας:</p>
                     
                     <div id="binsList" class="space-y-2 max-h-[340px] overflow-y-auto pr-1">
                         <!-- Bins will be rendered dynamically -->
@@ -304,43 +304,40 @@
         // Exact Correct Active Google Script URL
         const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_9oSxN5ra8UNwCoZclAwN0jEtQeYf_SlsfwPUa4zX0FGxU4YtcE11OzMW5ufmQ9e4/exec';
 
-        // 35 Default Warehouse Boxes
+        // 32 Default Warehouse Boxes
         const DEFAULT_BINS = [
-            { id: 1, name: "Κούτα 40x40x30", l: 40, w: 40, h: 30 },
-            { id: 2, name: "Κούτα 40x30x40", l: 40, w: 30, h: 40 },
-            { id: 3, name: "Κούτα 40x30x30", l: 40, w: 30, h: 30 },
-            { id: 4, name: "Κούτα 40x30x20", l: 40, w: 30, h: 20 },
-            { id: 5, name: "Κούτα 35x25x30", l: 35, w: 25, h: 30 },
-            { id: 6, name: "Κούτα 35x25x20", l: 35, w: 25, h: 20 },
-            { id: 7, name: "Κούτα 35x25x15", l: 35, w: 25, h: 15 },
-            { id: 8, name: "Κούτα 30x30x30", l: 30, w: 30, h: 30 },
-            { id: 9, name: "Κούτα 30x30x20", l: 30, w: 30, h: 20 },
-            { id: 11, name: "Κούτα 30x25x15", l: 30, w: 25, h: 15 },
-            { id: 13, name: "Κούτα 30x20x15", l: 30, w: 20, h: 15 },
-            { id: 14, name: "Κούτα 25x25x25", l: 25, w: 25, h: 25 },
-            { id: 15, name: "Κούτα 25x25x15", l: 25, w: 25, h: 15 },
-            { id: 16, name: "Κούτα 25x20x20", l: 25, w: 20, h: 20 },
-            { id: 17, name: "Κούτα 25x20x15", l: 25, w: 20, h: 15 },
-            { id: 18, name: "Κούτα 25x20x10", l: 25, w: 20, h: 10 },
-            { id: 19, name: "Κούτα 20x20x20", l: 20, w: 20, h: 20 },
-            { id: 20, name: "Κούτα 20x20x15", l: 20, w: 20, h: 15 },
-            { id: 21, name: "Κούτα 20x20x10", l: 20, w: 20, h: 10 },
-            { id: 22, name: "Κούτα 20x15x15", l: 20, w: 15, h: 15 },
-            { id: 23, name: "Κούτα 20x15x10", l: 20, w: 15, h: 10 },
-            { id: 24, name: "Κούτα 60x40x40", l: 60, w: 40, h: 40 },
-            { id: 25, name: "Κούτα 60x40x30", l: 60, w: 40, h: 30 },
-            { id: 26, name: "Κούτα 60x40x20", l: 60, w: 40, h: 20 },
-            { id: 27, name: "Κούτα 50x50x50", l: 50, w: 50, h: 50 },
-            { id: 28, name: "Κούτα 50x40x40", l: 50, w: 40, h: 40 },
-            { id: 29, name: "Κούτα 50x40x30", l: 50, w: 40, h: 30 },
-            { id: 30, name: "Κούτα 50x40x20", l: 50, w: 40, h: 20 },
-            { id: 31, name: "Κούτα 50x30x30", l: 50, w: 30, h: 30 },
-            { id: 32, name: "Κούτα 50x30x20", l: 50, w: 30, h: 20 },
-            { id: 33, name: "Κούτα 45x35x35", l: 45, w: 35, h: 35 },
-            { id: 34, name: "Κούτα 45x35x25", l: 45, w: 35, h: 25 },
-            { id: 35, name: "Κούτα 45x35x15", l: 45, w: 35, h: 15 },
-            { id: 36, name: "Κούτα 40x40x40", l: 40, w: 40, h: 40 },
-            { id: 37, name: "Κούτα 60x30x30", l: 60, w: 30, h: 30 }
+            { id: 1, name: "Κούτα 70x50x40", l: 70, w: 50, h: 40 },
+            { id: 2, name: "Κούτα 60x50x40", l: 60, w: 50, h: 40 },
+            { id: 3, name: "Κούτα 60x40x60", l: 60, w: 40, h: 60 },
+            { id: 4, name: "Κούτα 60x40x40", l: 60, w: 40, h: 40 },
+            { id: 5, name: "Κούτα 60x40x30", l: 60, w: 40, h: 30 },
+            { id: 6, name: "Κούτα 60x30x40", l: 60, w: 30, h: 40 },
+            { id: 7, name: "Κούτα 60x30x30", l: 60, w: 30, h: 30 },
+            { id: 8, name: "Κούτα 50x50x50", l: 50, w: 50, h: 50 },
+            { id: 9, name: "Κούτα 50x40x40", l: 50, w: 40, h: 40 },
+            { id: 10, name: "Κούτα 50x40x30", l: 50, w: 40, h: 30 },
+            { id: 11, name: "Κούτα 50x40x20", l: 50, w: 40, h: 20 },
+            { id: 12, name: "Κούτα 50x30x40", l: 50, w: 30, h: 40 },
+            { id: 13, name: "Κούτα 50x40x15", l: 50, w: 40, h: 15 },
+            { id: 14, name: "Κούτα 40x40x40", l: 40, w: 40, h: 40 },
+            { id: 15, name: "Κούτα 40x40x30", l: 40, w: 40, h: 30 },
+            { id: 16, name: "Κούτα 40x30x40", l: 40, w: 30, h: 40 },
+            { id: 17, name: "Κούτα 40x30x30", l: 40, w: 30, h: 30 },
+            { id: 18, name: "Κούτα 40x30x20", l: 40, w: 30, h: 20 },
+            { id: 19, name: "Κούτα 40x30x15", l: 40, w: 30, h: 15 },
+            { id: 20, name: "Κούτα 40x30x12", l: 40, w: 30, h: 12 },
+            { id: 21, name: "Κούτα 40x30x10", l: 40, w: 30, h: 10 },
+            { id: 22, name: "Κούτα 40x30x8", l: 40, w: 30, h: 8 },
+            { id: 23, name: "Κούτα 33x33x20", l: 33, w: 33, h: 20 },
+            { id: 24, name: "Κούτα 36x36x15", l: 36, w: 36, h: 15 },
+            { id: 25, name: "Κούτα 35x24x15", l: 35, w: 24, h: 15 },
+            { id: 26, name: "Κούτα 30x30x25", l: 30, w: 30, h: 25 },
+            { id: 27, name: "Κούτα 30x25x15", l: 30, w: 25, h: 15 },
+            { id: 28, name: "Κούτα 30x20x15", l: 30, w: 20, h: 15 },
+            { id: 29, name: "Κούτα 30x20x12", l: 30, w: 20, h: 12 },
+            { id: 30, name: "Κούτα 20.5x19.5x8.5", l: 20.5, w: 19.5, h: 8.5 },
+            { id: 31, name: "Κούτα 27x27x25", l: 27, w: 27, h: 25 },
+            { id: 32, name: "Κούτα 25x17x13", l: 25, w: 17, h: 13 }
         ];
 
         let availableBins = [...DEFAULT_BINS];
