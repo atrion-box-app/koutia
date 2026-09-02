@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Υπολογιστής Χαρτοκιβωτίων</title>
+    <title>Έξυπνος Υπολογιστής Χαρτοκιβωτίων & Ογκομετρικού Βάρους</title>
     <!-- Favicon Icon (📦) for browser tab -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
     <!-- Tailwind CSS for UI styling -->
@@ -52,7 +52,7 @@
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
-            #appContainer, #toastNotification, .no-print, #printModal {
+            #appContainer, #toastNotification, .no-print, #printModal, #boxOverrideModal {
                 display: none !important;
             }
             #printSection {
@@ -87,10 +87,10 @@
         <!-- HEADER -->
         <div class="text-center mb-6">
             <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 flex items-center justify-center gap-2">
-                <span>📦</span> Υπολογιστής Χαρτοκιβωτίων
+                <span>📦</span> Έξυπνος Υπολογιστής Χαρτοκιβωτίων
             </h1>
             <p class="text-xs sm:text-sm text-slate-500 mt-1">
-                Βέλτιστη επιλογή κιβωτίων βάσει <b>Όγκου & Ογκομετρικού Βάρους (όριο 18 kg)</b>, Google Sheets & Εκτύπωση.
+                Βέλτιστη επιλογή κιβωτίων βάσει <b>Όγκου & Ογκομετρικού Βάρους (όριο 18 kg)</b>, Διαχωρισμός Προορισμών & Εκτύπωση.
             </p>
         </div>
 
@@ -109,7 +109,7 @@
             </p>
             <div class="flex flex-col sm:flex-row gap-2">
                 <input type="text" id="scriptUrl" 
-                    placeholder="https://script.google.com/macros/s/AKfycbw_9oSxN5ra8UNwCoZclAwN0jEtQeYf_SlsfwPUa4zX0FGxU4YtcE11OzMW5ufmQ9e4/exec" 
+                    placeholder="Επικολλήστε το Web App URL..." 
                     class="flex-1 text-xs p-2.5 border border-amber-300 rounded-lg bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono text-slate-700">
                 <button onclick="saveAndFetchProjects()" class="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-4 py-2.5 rounded-lg text-xs transition-colors shadow-sm whitespace-nowrap">
                     Αποθήκευση & Φόρτωση Projects
@@ -122,13 +122,15 @@
             <!-- LEFT COLUMN: AVAILABLE BOXES -->
             <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-between">
                 <div>
-                    <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center justify-between mb-2">
                         <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
                             <span>🏢</span> Διαθέσιμα Κουτιά Αποθήκης
                         </h2>
-                        <span id="binCountBadge" class="text-xs font-bold bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full">32 κουτιά</span>
+                        <span id="binCountBadge" class="text-xs font-bold bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full">32 ενεργά</span>
                     </div>
-                    <p class="text-xs text-slate-500 mb-3">Προεπιλεγμένα τα 32 χαρτοκιβώτια της αποθήκης σας:</p>
+                    <p class="text-[11px] text-slate-500 mb-3">
+                        Ξε-τικάρετε τα κιβώτια που έχουν εξαντληθεί προσωρινά στην αποθήκη:
+                    </p>
                     
                     <div id="binsList" class="space-y-2 max-h-[340px] overflow-y-auto pr-1">
                         <!-- Bins will be rendered dynamically -->
@@ -150,7 +152,7 @@
                 </div>
             </div>
 
-            <!-- RIGHT COLUMN: SHIPMENT DETAILS -->
+            <!-- RIGHT COLUMN: SHIPMENT DETAILS & SPLIT DESTINATIONS -->
             <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex flex-col justify-between">
                 <div class="space-y-4">
                     <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
@@ -204,24 +206,20 @@
                                 <label class="block text-[10px] font-semibold text-indigo-900 mb-0.5" title="Προσθέτει αέρα για κορδέλες, φιόγκους ή bubble wrap">
                                     🎁 Αέρας Προϊόντος (cm)
                                 </label>
-                                <div class="flex items-center gap-1">
-                                    <input type="number" step="0.1" id="itemMargin" value="1.0" class="w-full text-xs p-1.5 border border-indigo-200 rounded bg-white text-center font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400">
-                                </div>
+                                <input type="number" step="0.1" id="itemMargin" value="1.0" class="w-full text-xs p-1.5 border border-indigo-200 rounded bg-white text-center font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400">
                                 <span class="text-[9px] text-indigo-600 block mt-0.5">(π.χ. +1.0cm για κορδέλα)</span>
                             </div>
                             <div>
                                 <label class="block text-[10px] font-semibold text-indigo-900 mb-0.5" title="Αφαιρείται από το κουτί λόγω πάχους χαρτονιού & ενώσεων">
                                     📦 Απώλεια Κιβωτίου (cm)
                                 </label>
-                                <div class="flex items-center gap-1">
-                                    <input type="number" step="0.1" id="boxMargin" value="1.5" class="w-full text-xs p-1.5 border border-indigo-200 rounded bg-white text-center font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400">
-                                </div>
+                                <input type="number" step="0.1" id="boxMargin" value="1.5" class="w-full text-xs p-1.5 border border-indigo-200 rounded bg-white text-center font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400">
                                 <span class="text-[9px] text-indigo-600 block mt-0.5">(π.χ. -1.5cm εσωτερικός αέρας)</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- ITEM WEIGHT & QUANTITY -->
+                    <!-- ITEM WEIGHT & QUANTITY / SPLIT TOGGLE -->
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1">Βάρος 1 Τεμαχίου (kg)</label>
@@ -229,7 +227,36 @@
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1">Συνολική Ποσότητα (τμχ)</label>
-                            <input type="number" id="itemQty" placeholder="π.χ. 30" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <input type="number" id="itemQty" oninput="updateSplitTotals()" placeholder="π.χ. 100" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <!-- CUSTOM SPLIT DESTINATIONS SECTION -->
+                    <div class="bg-white p-3 rounded-xl border border-blue-200">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                <span>🔀</span> Διαχωρισμός σε Προορισμούς / Παρτίδες
+                            </span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="splitModeToggle" onchange="toggleSplitMode()" class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+
+                        <!-- DESTINATIONS CONTAINER (VISIBLE ONLY IN SPLIT MODE) -->
+                        <div id="splitSectionContainer" class="hidden mt-3 pt-3 border-t border-slate-100 space-y-2">
+                            <div class="flex items-center justify-between text-[11px]">
+                                <span class="text-slate-500">Ορίστε τεμάχια ανά προορισμό:</span>
+                                <span id="splitAllocationBadge" class="font-bold text-emerald-600">Κατανεμήθηκαν: 0 / 0</span>
+                            </div>
+
+                            <div id="destinationsList" class="space-y-1.5 max-h-36 overflow-y-auto">
+                                <!-- Destination rows dynamically added -->
+                            </div>
+
+                            <button onclick="addDestinationRow()" class="w-full py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors flex items-center justify-center gap-1">
+                                + Προσθήκη Νέου Προορισμού
+                            </button>
                         </div>
                     </div>
 
@@ -288,8 +315,8 @@
                 </div>
             </div>
 
-            <!-- DETAILED BOX BREAKDOWN -->
-            <div id="boxBreakdownList" class="space-y-3 mb-6">
+            <!-- DETAILED BOX BREAKDOWN LIST -->
+            <div id="boxBreakdownList" class="space-y-4 mb-6">
                 <!-- Box breakdown cards -->
             </div>
 
@@ -303,6 +330,31 @@
                 </button>
                 <button onclick="copyResultsToClipboard()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 px-4 rounded-xl text-xs transition-colors border border-slate-300 flex items-center justify-center gap-1.5 col-span-1">
                     <span>📋</span> Αντιγραφή
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOX OVERRIDE / MANUAL SELECTION MODAL -->
+    <div id="boxOverrideModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 no-print">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[85vh] flex flex-col overflow-hidden">
+            <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                <div>
+                    <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                        <span>🔄</span> Χειροκίνητη Επιλογή Άλλου Κιβωτίου
+                    </h3>
+                    <p class="text-[11px] text-slate-500">Επιλέξτε ένα εναλλακτικό κουτί για αυτή την παρτίδα τεμαχίων</p>
+                </div>
+                <button onclick="closeBoxOverrideModal()" class="text-slate-400 hover:text-slate-600 p-1 text-lg font-bold">&times;</button>
+            </div>
+            
+            <div class="p-4 overflow-y-auto flex-1 space-y-2" id="overrideOptionsList">
+                <!-- Compatible boxes list -->
+            </div>
+
+            <div class="p-3 border-t border-slate-200 bg-slate-50 flex justify-end">
+                <button onclick="closeBoxOverrideModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-lg">
+                    Ακύρωση
                 </button>
             </div>
         </div>
@@ -396,45 +448,52 @@
         // Exact Correct Active Google Script URL
         const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_9oSxN5ra8UNwCoZclAwN0jEtQeYf_SlsfwPUa4zX0FGxU4YtcE11OzMW5ufmQ9e4/exec';
 
-        // 32 Default Warehouse Boxes
+        // 32 Default Warehouse Boxes with active status
         const DEFAULT_BINS = [
-            { id: 1, name: "Κούτα 70x50x40", l: 70, w: 50, h: 40 },
-            { id: 2, name: "Κούτα 60x50x40", l: 60, w: 50, h: 40 },
-            { id: 3, name: "Κούτα 60x40x60", l: 60, w: 40, h: 60 },
-            { id: 4, name: "Κούτα 60x40x40", l: 60, w: 40, h: 40 },
-            { id: 5, name: "Κούτα 60x40x30", l: 60, w: 40, h: 30 },
-            { id: 6, name: "Κούτα 60x30x40", l: 60, w: 30, h: 40 },
-            { id: 7, name: "Κούτα 60x30x30", l: 60, w: 30, h: 30 },
-            { id: 8, name: "Κούτα 50x50x50", l: 50, w: 50, h: 50 },
-            { id: 9, name: "Κούτα 50x40x40", l: 50, w: 40, h: 40 },
-            { id: 10, name: "Κούτα 50x40x30", l: 50, w: 40, h: 30 },
-            { id: 11, name: "Κούτα 50x40x20", l: 50, w: 40, h: 20 },
-            { id: 12, name: "Κούτα 50x30x40", l: 50, w: 30, h: 40 },
-            { id: 13, name: "Κούτα 50x40x15", l: 50, w: 40, h: 15 },
-            { id: 14, name: "Κούτα 40x40x40", l: 40, w: 40, h: 40 },
-            { id: 15, name: "Κούτα 40x40x30", l: 40, w: 40, h: 30 },
-            { id: 16, name: "Κούτα 40x30x40", l: 40, w: 30, h: 40 },
-            { id: 17, name: "Κούτα 40x30x30", l: 40, w: 30, h: 30 },
-            { id: 18, name: "Κούτα 40x30x20", l: 40, w: 30, h: 20 },
-            { id: 19, name: "Κούτα 40x30x15", l: 40, w: 30, h: 15 },
-            { id: 20, name: "Κούτα 40x30x12", l: 40, w: 30, h: 12 },
-            { id: 21, name: "Κούτα 40x30x10", l: 40, w: 30, h: 10 },
-            { id: 22, name: "Κούτα 40x30x8", l: 40, w: 30, h: 8 },
-            { id: 23, name: "Κούτα 33x33x20", l: 33, w: 33, h: 20 },
-            { id: 24, name: "Κούτα 36x36x15", l: 36, w: 36, h: 15 },
-            { id: 25, name: "Κούτα 35x24x15", l: 35, w: 24, h: 15 },
-            { id: 26, name: "Κούτα 30x30x25", l: 30, w: 30, h: 25 },
-            { id: 27, name: "Κούτα 30x25x15", l: 30, w: 25, h: 15 },
-            { id: 28, name: "Κούτα 30x20x15", l: 30, w: 20, h: 15 },
-            { id: 29, name: "Κούτα 30x20x12", l: 30, w: 20, h: 12 },
-            { id: 30, name: "Κούτα 20.5x19.5x8.5", l: 20.5, w: 19.5, h: 8.5 },
-            { id: 31, name: "Κούτα 27x27x25", l: 27, w: 27, h: 25 },
-            { id: 32, name: "Κούτα 25x17x13", l: 25, w: 17, h: 13 }
+            { id: 1, name: "Κούτα 70x50x40", l: 70, w: 50, h: 40, active: true },
+            { id: 2, name: "Κούτα 60x50x40", l: 60, w: 50, h: 40, active: true },
+            { id: 3, name: "Κούτα 60x40x60", l: 60, w: 40, h: 60, active: true },
+            { id: 4, name: "Κούτα 60x40x40", l: 60, w: 40, h: 40, active: true },
+            { id: 5, name: "Κούτα 60x40x30", l: 60, w: 40, h: 30, active: true },
+            { id: 6, name: "Κούτα 60x30x40", l: 60, w: 30, h: 40, active: true },
+            { id: 7, name: "Κούτα 60x30x30", l: 60, w: 30, h: 30, active: true },
+            { id: 8, name: "Κούτα 50x50x50", l: 50, w: 50, h: 50, active: true },
+            { id: 9, name: "Κούτα 50x40x40", l: 50, w: 40, h: 40, active: true },
+            { id: 10, name: "Κούτα 50x40x30", l: 50, w: 40, h: 30, active: true },
+            { id: 11, name: "Κούτα 50x40x20", l: 50, w: 40, h: 20, active: true },
+            { id: 12, name: "Κούτα 50x30x40", l: 50, w: 30, h: 40, active: true },
+            { id: 13, name: "Κούτα 50x40x15", l: 50, w: 40, h: 15, active: true },
+            { id: 14, name: "Κούτα 40x40x40", l: 40, w: 40, h: 40, active: true },
+            { id: 15, name: "Κούτα 40x40x30", l: 40, w: 40, h: 30, active: true },
+            { id: 16, name: "Κούτα 40x30x40", l: 40, w: 30, h: 40, active: true },
+            { id: 17, name: "Κούτα 40x30x30", l: 40, w: 30, h: 30, active: true },
+            { id: 18, name: "Κούτα 40x30x20", l: 40, w: 30, h: 20, active: true },
+            { id: 19, name: "Κούτα 40x30x15", l: 40, w: 30, h: 15, active: true },
+            { id: 20, name: "Κούτα 40x30x12", l: 40, w: 30, h: 12, active: true },
+            { id: 21, name: "Κούτα 40x30x10", l: 40, w: 30, h: 10, active: true },
+            { id: 22, name: "Κούτα 40x30x8", l: 40, w: 30, h: 8, active: true },
+            { id: 23, name: "Κούτα 33x33x20", l: 33, w: 33, h: 20, active: true },
+            { id: 24, name: "Κούτα 36x36x15", l: 36, w: 36, h: 15, active: true },
+            { id: 25, name: "Κούτα 35x24x15", l: 35, w: 24, h: 15, active: true },
+            { id: 26, name: "Κούτα 30x30x25", l: 30, w: 30, h: 25, active: true },
+            { id: 27, name: "Κούτα 30x25x15", l: 30, w: 25, h: 15, active: true },
+            { id: 28, name: "Κούτα 30x20x15", l: 30, w: 20, h: 15, active: true },
+            { id: 29, name: "Κούτα 30x20x12", l: 30, w: 20, h: 12, active: true },
+            { id: 30, name: "Κούτα 20.5x19.5x8.5", l: 20.5, w: 19.5, h: 8.5, active: true },
+            { id: 31, name: "Κούτα 27x27x25", l: 27, w: 27, h: 25, active: true },
+            { id: 32, name: "Κούτα 25x17x13", l: 25, w: 17, h: 13, active: true }
         ];
 
         let availableBins = [...DEFAULT_BINS];
         let googleProjects = [];
         let currentCalculation = null;
+        let activeOverrideTarget = null; // { groupIndex, planIndex }
+
+        // Split destinations state
+        let isSplitMode = false;
+        let destinations = [
+            { id: 1, name: "Προορισμός 1", qty: 0 }
+        ];
 
         window.onload = function() {
             let savedUrl = localStorage.getItem('boxApp_scriptUrl');
@@ -445,22 +504,35 @@
             document.getElementById('scriptUrl').value = savedUrl;
 
             renderBinsList();
+            renderDestinationsList();
             fetchGoogleProjects(savedUrl);
         };
 
         function renderBinsList() {
             const list = document.getElementById('binsList');
-            document.getElementById('binCountBadge').innerText = `${availableBins.length} κουτιά`;
+            const activeCount = availableBins.filter(b => b.active).length;
+            document.getElementById('binCountBadge').innerText = `${activeCount} ενεργά (${availableBins.length} σύνολο)`;
             
             list.innerHTML = availableBins.map(bin => `
-                <div class="flex justify-between items-center bg-white p-2.5 rounded-lg border border-slate-200 shadow-xs text-xs">
-                    <div>
-                        <span class="font-bold text-slate-800">${bin.name}</span>
-                        <span class="text-slate-500 block text-[10px]">${bin.l} x ${bin.w} x ${bin.h} cm (${(bin.l * bin.w * bin.h).toLocaleString()} cm³)</span>
+                <div class="flex justify-between items-center bg-white p-2 rounded-lg border ${bin.active ? 'border-slate-200' : 'border-slate-100 bg-slate-100/70 opacity-60'} text-xs">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" ${bin.active ? 'checked' : ''} onchange="toggleBinActive(${bin.id})" class="w-4 h-4 text-blue-600 rounded cursor-pointer" title="Ενεργό / Διαθέσιμο στην Αποθήκη">
+                        <div>
+                            <span class="font-bold ${bin.active ? 'text-slate-800' : 'text-slate-500 line-through'}">${bin.name}</span>
+                            <span class="text-slate-400 block text-[10px]">${bin.l} x ${bin.w} x ${bin.h} cm (${(bin.l * bin.w * bin.h).toLocaleString()} cm³)</span>
+                        </div>
                     </div>
-                    <button onclick="removeBin(${bin.id})" class="text-slate-400 hover:text-red-500 p-1 font-bold transition-colors" title="Διαγραφή">✕</button>
+                    <button onclick="removeBin(${bin.id})" class="text-slate-300 hover:text-red-500 p-1 font-bold transition-colors" title="Διαγραφή">✕</button>
                 </div>
             `).join('');
+        }
+
+        function toggleBinActive(id) {
+            const bin = availableBins.find(b => b.id === id);
+            if (bin) {
+                bin.active = !bin.active;
+                renderBinsList();
+            }
         }
 
         function addCustomBin() {
@@ -474,7 +546,7 @@
                 return;
             }
 
-            availableBins.push({ id: Date.now(), name, l, w, h });
+            availableBins.push({ id: Date.now(), name, l, w, h, active: true });
             renderBinsList();
 
             document.getElementById('binName').value = '';
@@ -493,6 +565,79 @@
             renderBinsList();
         }
 
+        /* SPLIT DESTINATIONS LOGIC */
+        function toggleSplitMode() {
+            isSplitMode = document.getElementById('splitModeToggle').checked;
+            const container = document.getElementById('splitSectionContainer');
+            if (isSplitMode) {
+                container.classList.remove('hidden');
+                if (destinations.length === 0) {
+                    addDestinationRow();
+                }
+                updateSplitTotals();
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        function renderDestinationsList() {
+            const container = document.getElementById('destinationsList');
+            container.innerHTML = destinations.map((d, index) => `
+                <div class="flex items-center gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-200 text-xs">
+                    <span class="text-[10px] font-bold text-slate-400 w-4 text-center">${index + 1}.</span>
+                    <input type="text" value="${d.name}" oninput="updateDestName(${d.id}, this.value)" placeholder="Όνομα Προορισμού" class="flex-1 text-xs p-1.5 border border-slate-300 rounded bg-white focus:outline-none">
+                    <div class="flex items-center gap-1 w-24">
+                        <input type="number" value="${d.qty || ''}" oninput="updateDestQty(${d.id}, this.value)" placeholder="τμχ" class="w-full text-xs p-1.5 text-center font-bold border border-slate-300 rounded bg-white focus:outline-none">
+                        <span class="text-[10px] text-slate-500 font-semibold">τμχ</span>
+                    </div>
+                    ${destinations.length > 1 ? `<button onclick="removeDestinationRow(${d.id})" class="text-slate-400 hover:text-red-500 font-bold p-1">&times;</button>` : ''}
+                </div>
+            `).join('');
+            updateSplitTotals();
+        }
+
+        function addDestinationRow() {
+            destinations.push({
+                id: Date.now(),
+                name: `Προορισμός ${destinations.length + 1}`,
+                qty: 0
+            });
+            renderDestinationsList();
+        }
+
+        function removeDestinationRow(id) {
+            if (destinations.length <= 1) return;
+            destinations = destinations.filter(d => d.id !== id);
+            renderDestinationsList();
+        }
+
+        function updateDestName(id, val) {
+            const dest = destinations.find(d => d.id === id);
+            if (dest) dest.name = val;
+        }
+
+        function updateDestQty(id, val) {
+            const dest = destinations.find(d => d.id === id);
+            if (dest) dest.qty = parseInt(val) || 0;
+            updateSplitTotals();
+        }
+
+        function updateSplitTotals() {
+            if (!isSplitMode) return;
+            const totalRequired = parseInt(document.getElementById('itemQty').value) || 0;
+            const totalAssigned = destinations.reduce((sum, d) => sum + (d.qty || 0), 0);
+            
+            const badge = document.getElementById('splitAllocationBadge');
+            badge.innerText = `Κατανεμήθηκαν: ${totalAssigned} / ${totalRequired} τμχ`;
+
+            if (totalAssigned === totalRequired && totalRequired > 0) {
+                badge.className = "font-bold text-emerald-600";
+            } else {
+                badge.className = "font-bold text-amber-600";
+            }
+        }
+
+        /* GOOGLE INTEGRATION */
         function saveAndFetchProjects() {
             const url = document.getElementById('scriptUrl').value.trim();
             if (!url || !url.startsWith('http')) {
@@ -567,6 +712,7 @@
             }
         }
 
+        /* PACKING ALGORITHM */
         function calculateFitPerBox(itemL, itemW, itemH, binL, binW, binH) {
             const orientations = [
                 [itemL, itemW, itemH], [itemL, itemH, itemW],
@@ -593,33 +739,8 @@
             return { maxCount, bestOrientation, bestGrid };
         }
 
-        function calculatePacking() {
-            const rawItemL = parseFloat(document.getElementById('itemL').value);
-            const rawItemW = parseFloat(document.getElementById('itemW').value);
-            const rawItemH = parseFloat(document.getElementById('itemH').value);
-            const itemWeight = parseFloat(document.getElementById('itemWeight').value);
-            const totalQty = parseInt(document.getElementById('itemQty').value);
-            const maxWeightLimit = parseFloat(document.getElementById('maxWeightLimit').value) || 18.0;
-            const volFactor = parseFloat(document.getElementById('volumetricFactor').value) || 5000;
-            const projectName = document.getElementById('projectNameInput').value.trim() || 'PROJECT / ΑΠΟΣΤΟΛΗ';
-
-            // Safety Margins & Tolerances
-            const itemMargin = parseFloat(document.getElementById('itemMargin').value) || 0;
-            const boxMargin = parseFloat(document.getElementById('boxMargin').value) || 0;
-
-            if (!rawItemL || !rawItemW || !rawItemH || !itemWeight || !totalQty || rawItemL <= 0 || rawItemW <= 0 || rawItemH <= 0 || itemWeight <= 0 || totalQty <= 0) {
-                showToast("⚠️ Παρακαλώ συμπληρώστε όλα τα στοιχεία του προϊόντος με έγκυρες τιμές.");
-                return;
-            }
-
-            // Effective Item Dimensions including Ribbon / Padding
-            const itemL = rawItemL + itemMargin;
-            const itemW = rawItemW + itemMargin;
-            const itemH = rawItemH + itemMargin;
-            const singleItemVol = itemL * itemW * itemH;
-
-            // Evaluate all available boxes
-            let binEvaluations = availableBins.map(bin => {
+        function evaluateCandidateBoxes(activeBinsList, itemL, itemW, itemH, itemWeight, maxWeightLimit, volFactor, boxMargin) {
+            return activeBinsList.map(bin => {
                 const effectiveBinL = Math.max(0.1, bin.l - boxMargin);
                 const effectiveBinW = Math.max(0.1, bin.w - boxMargin);
                 const effectiveBinH = Math.max(0.1, bin.h - boxMargin);
@@ -642,19 +763,15 @@
                     effectiveBinDimensions: { l: effectiveBinL, w: effectiveBinW, h: effectiveBinH }
                 };
             }).filter(item => item.fitPerBox > 0);
+        }
 
-            if (binEvaluations.length === 0) {
-                showToast("❌ Κανένα από τα διαθέσιμα κουτιά δεν μπορεί να χωρέσει ούτε 1 τεμάχιο με τις ανοχές που ορίσατε!");
-                return;
-            }
+        function packQuantity(qtyToPack, binEvaluations, singleItemVol, itemWeight) {
+            let remaining = qtyToPack;
+            let plan = [];
 
-            let remainingQty = totalQty;
-            let packingPlan = [];
-
-            // MULTI-TIER PACKING ALGORITHM
-            while (remainingQty > 0) {
+            while (remaining > 0) {
                 let candidates = binEvaluations.map(e => {
-                    const itemsToPut = Math.min(e.fitPerBox, remainingQty);
+                    const itemsToPut = Math.min(e.fitPerBox, remaining);
                     const packedVol = itemsToPut * singleItemVol;
                     const fillRate = packedVol / e.binVol;
                     const realWeight = itemsToPut * itemWeight;
@@ -672,25 +789,18 @@
                     };
                 });
 
-                // SORTING RULES:
-                // 1. Maximizes items packed per box
-                // 2. Selects the SMALLEST box volume
-                // 3. Maximizes Volume Fill Rate %
+                // Sort: 1. Max items, 2. Smallest volume, 3. Highest fill rate
                 candidates.sort((a, b) => {
-                    if (b.itemsToPut !== a.itemsToPut) {
-                        return b.itemsToPut - a.itemsToPut;
-                    }
-                    if (a.binVol !== b.binVol) {
-                        return a.binVol - b.binVol;
-                    }
+                    if (b.itemsToPut !== a.itemsToPut) return b.itemsToPut - a.itemsToPut;
+                    if (a.binVol !== b.binVol) return a.binVol - b.binVol;
                     return b.fillRate - a.fillRate;
                 });
 
                 const bestChoice = candidates[0];
-                const fullBoxesCount = Math.floor(remainingQty / bestChoice.itemsToPut);
+                const fullBoxesCount = Math.floor(remaining / bestChoice.itemsToPut);
 
                 if (fullBoxesCount > 0) {
-                    packingPlan.push({
+                    plan.push({
                         bin: bestChoice.bin,
                         count: fullBoxesCount,
                         itemsPerBox: bestChoice.itemsToPut,
@@ -704,54 +814,127 @@
                         fillRatePercent: (bestChoice.fillRate * 100).toFixed(1),
                         isPartial: false
                     });
-                    remainingQty -= (fullBoxesCount * bestChoice.itemsToPut);
+                    remaining -= (fullBoxesCount * bestChoice.itemsToPut);
                 } else {
-                    // Remaining items < fitPerBox: Pick the smallest box that fits remaining items
                     let suitableRemainder = candidates
-                        .filter(c => c.fitPerBox >= remainingQty)
+                        .filter(c => c.fitPerBox >= remaining)
                         .sort((a, b) => a.binVol - b.binVol);
 
                     let remainderChoice = suitableRemainder.length > 0 ? suitableRemainder[0] : bestChoice;
-                    const remPackedVol = remainingQty * singleItemVol;
+                    const remPackedVol = remaining * singleItemVol;
                     const remFillRate = remPackedVol / remainderChoice.binVol;
 
-                    packingPlan.push({
+                    plan.push({
                         bin: remainderChoice.bin,
                         count: 1,
-                        itemsPerBox: remainingQty,
+                        itemsPerBox: remaining,
                         maxVolQty: remainderChoice.maxVolQty,
                         orientation: remainderChoice.orientation,
                         grid: remainderChoice.grid,
-                        totalItems: remainingQty,
-                        weightPerBox: (remainingQty * itemWeight).toFixed(2),
+                        totalItems: remaining,
+                        weightPerBox: (remaining * itemWeight).toFixed(2),
                         volWeightPerBox: remainderChoice.volWeight.toFixed(2),
-                        chargeableWeightPerBox: Math.max(remainingQty * itemWeight, remainderChoice.volWeight).toFixed(2),
+                        chargeableWeightPerBox: Math.max(remaining * itemWeight, remainderChoice.volWeight).toFixed(2),
                         fillRatePercent: (remFillRate * 100).toFixed(1),
                         isPartial: true
                     });
-                    remainingQty = 0;
+                    remaining = 0;
                 }
             }
+            return plan;
+        }
 
-            const totalBoxesCount = packingPlan.reduce((acc, curr) => acc + curr.count, 0);
+        function calculatePacking() {
+            const rawItemL = parseFloat(document.getElementById('itemL').value);
+            const rawItemW = parseFloat(document.getElementById('itemW').value);
+            const rawItemH = parseFloat(document.getElementById('itemH').value);
+            const itemWeight = parseFloat(document.getElementById('itemWeight').value);
+            const totalQty = parseInt(document.getElementById('itemQty').value);
+            const maxWeightLimit = parseFloat(document.getElementById('maxWeightLimit').value) || 18.0;
+            const volFactor = parseFloat(document.getElementById('volumetricFactor').value) || 5000;
+            const projectName = document.getElementById('projectNameInput').value.trim() || 'PROJECT / ΑΠΟΣΤΟΛΗ';
+
+            const itemMargin = parseFloat(document.getElementById('itemMargin').value) || 0;
+            const boxMargin = parseFloat(document.getElementById('boxMargin').value) || 0;
+
+            if (!rawItemL || !rawItemW || !rawItemH || !itemWeight || !totalQty || rawItemL <= 0 || rawItemW <= 0 || rawItemH <= 0 || itemWeight <= 0 || totalQty <= 0) {
+                showToast("⚠️ Παρακαλώ συμπληρώστε όλα τα στοιχεία του προϊόντος με έγκυρες τιμές.");
+                return;
+            }
+
+            // Check Split Mode validation
+            let targetBatches = [];
+            if (isSplitMode) {
+                const totalAssigned = destinations.reduce((sum, d) => sum + (d.qty || 0), 0);
+                if (totalAssigned !== totalQty) {
+                    showToast(`⚠️ Το σύνολο των προορισμών (${totalAssigned} τμχ) δεν ισούται με τη συνολική ποσότητα (${totalQty} τμχ)!`);
+                    return;
+                }
+                targetBatches = destinations.filter(d => d.qty > 0);
+            } else {
+                targetBatches = [{ id: 1, name: projectName, qty: totalQty }];
+            }
+
+            const itemL = rawItemL + itemMargin;
+            const itemW = rawItemW + itemMargin;
+            const itemH = rawItemH + itemMargin;
+            const singleItemVol = itemL * itemW * itemH;
+
+            // Only use warehouse boxes marked as active
+            const activeWarehouseBins = availableBins.filter(b => b.active);
+            if (activeWarehouseBins.length === 0) {
+                showToast("⚠️ Δεν υπάρχει κανένα ενεργό κουτί στη λίστα αποθήκης!");
+                return;
+            }
+
+            const binEvaluations = evaluateCandidateBoxes(activeWarehouseBins, itemL, itemW, itemH, itemWeight, maxWeightLimit, volFactor, boxMargin);
+            if (binEvaluations.length === 0) {
+                showToast("❌ Κανένα από τα ενεργά κουτιά δεν χωράει το προϊόν με τις τρέχουσες ανοχές!");
+                return;
+            }
+
+            // Calculate packing for each batch/destination
+            let groups = targetBatches.map(batch => {
+                const plan = packQuantity(batch.qty, binEvaluations, singleItemVol, itemWeight);
+                return {
+                    name: batch.name,
+                    qty: batch.qty,
+                    packingPlan: plan
+                };
+            });
+
+            // Flatten calculations for totals
+            let totalBoxesCount = 0;
+            let totalVolWeight = 0;
+            let totalChargeable = 0;
+
+            groups.forEach(g => {
+                g.packingPlan.forEach(p => {
+                    totalBoxesCount += p.count;
+                    totalVolWeight += parseFloat(p.volWeightPerBox) * p.count;
+                    totalChargeable += parseFloat(p.chargeableWeightPerBox) * p.count;
+                });
+            });
+
             const totalWeight = (totalQty * itemWeight).toFixed(2);
-            const totalVolWeight = packingPlan.reduce((acc, curr) => acc + (parseFloat(curr.volWeightPerBox) * curr.count), 0).toFixed(2);
-            const totalChargeable = packingPlan.reduce((acc, curr) => acc + (parseFloat(curr.chargeableWeightPerBox) * curr.count), 0).toFixed(2);
 
             currentCalculation = {
                 projectName,
                 totalQty,
                 itemWeight,
+                rawItemL, rawItemW, rawItemH,
+                itemL, itemW, itemH,
+                singleItemVol,
+                itemMargin, boxMargin,
+                maxWeightLimit, volFactor,
                 totalWeight,
-                totalVolWeight,
-                totalChargeable,
+                totalVolWeight: totalVolWeight.toFixed(2),
+                totalChargeable: totalChargeable.toFixed(2),
                 totalBoxesCount,
-                packingPlan
+                groups
             };
 
             renderResultsUI();
-
-            // Automatically send data to Google Sheet immediately after calculation
             sendDataToSheet();
         }
 
@@ -768,56 +951,155 @@
             document.getElementById('printCountLabel').innerText = currentCalculation.totalBoxesCount;
 
             const breakdownDiv = document.getElementById('boxBreakdownList');
-            breakdownDiv.innerHTML = currentCalculation.packingPlan.map((p, idx) => {
-                const isVolumetricPenalized = parseFloat(p.volWeightPerBox) > parseFloat(p.weightPerBox);
-                return `
-                    <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                        <div class="flex items-center gap-3">
-                            <span class="w-8 h-8 rounded-lg ${p.isPartial ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'} font-black text-xs flex items-center justify-center shrink-0">
-                                ${p.count}x
+            breakdownDiv.innerHTML = currentCalculation.groups.map((group, groupIdx) => `
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    ${isSplitMode ? `
+                        <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-200">
+                            <span class="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                                📍 ${group.name} <span class="text-slate-500 font-normal">(${group.qty} τμχ)</span>
                             </span>
-                            <div>
-                                <h4 class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                                    ${p.bin.name} 
-                                    <span class="text-[10px] text-slate-400 font-normal">(${p.bin.l} x ${p.bin.w} x ${p.bin.h} cm)</span>
-                                </h4>
-                                <div class="flex flex-wrap items-center gap-2 mt-0.5">
-                                    <span class="text-[11px] text-slate-500">
-                                        Περιέχει <b>${p.itemsPerBox} τμχ</b> ανά κιβώτιο ${p.isPartial ? '<span class="text-amber-600 font-semibold">(υπόλοιπο)</span>' : ''}
-                                    </span>
-                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-800" title="Πληρότητα Όγκου Κιβωτίου">
-                                        📊 ${p.fillRatePercent}% πλήρες
-                                    </span>
-                                    ${isVolumetricPenalized ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800" title="Το ογκομετρικό βάρος υπερβαίνει το πραγματικό">⚠️ Ογκομετρική Χρέωση</span>` : ''}
+                        </div>
+                    ` : ''}
+                    <div class="space-y-2.5">
+                        ${group.packingPlan.map((p, planIdx) => {
+                            const isVolumetricPenalized = parseFloat(p.volWeightPerBox) > parseFloat(p.weightPerBox);
+                            return `
+                                <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                    <div class="flex items-center gap-3">
+                                        <span class="w-8 h-8 rounded-lg ${p.isPartial ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'} font-black text-xs flex items-center justify-center shrink-0">
+                                            ${p.count}x
+                                        </span>
+                                        <div>
+                                            <h4 class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                                ${p.bin.name} 
+                                                <span class="text-[10px] text-slate-400 font-normal">(${p.bin.l} x ${p.bin.w} x ${p.bin.h} cm)</span>
+                                            </h4>
+                                            <div class="flex flex-wrap items-center gap-2 mt-0.5">
+                                                <span class="text-[11px] text-slate-500">
+                                                    Περιέχει <b>${p.itemsPerBox} τμχ</b> ανά κιβώτιο ${p.isPartial ? '<span class="text-amber-600 font-semibold">(υπόλοιπο)</span>' : ''}
+                                                </span>
+                                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-800">
+                                                    📊 ${p.fillRatePercent}% πλήρες
+                                                </span>
+                                                ${isVolumetricPenalized ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">⚠️ Ογκομετρική Χρέωση</span>` : ''}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2 self-end sm:self-auto">
+                                        <button onclick="openBoxOverrideModal(${groupIdx}, ${planIdx})" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1.5 rounded-lg text-xs transition-colors border border-slate-300 flex items-center gap-1" title="Επιλογή άλλου κιβωτίου">
+                                            <span>🔄</span> Αλλαγή
+                                        </button>
+                                        <button onclick="open3DModal(${groupIdx}, ${planIdx})" class="bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold px-2.5 py-1.5 rounded-lg text-xs transition-colors border border-sky-200 flex items-center gap-1">
+                                            <span>🧊</span> 3D
+                                        </button>
+                                        <div class="text-right min-w-[70px]">
+                                            <span class="text-xs font-extrabold block text-slate-800">${p.weightPerBox} kg</span>
+                                            <span class="text-[9px] text-sky-600 block">Ογκ: ${p.volWeightPerBox} kg</span>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            resDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        /* MANUAL BOX OVERRIDE MODAL */
+        function openBoxOverrideModal(groupIdx, planIdx) {
+            if (!currentCalculation) return;
+            activeOverrideTarget = { groupIdx, planIdx };
+            const currentPlan = currentCalculation.groups[groupIdx].packingPlan[planIdx];
+
+            const list = document.getElementById('overrideOptionsList');
+            const { itemL, itemW, itemH, singleItemVol, itemWeight, maxWeightLimit, volFactor, boxMargin } = currentCalculation;
+
+            // Evaluate all warehouse boxes
+            const evaluations = evaluateCandidateBoxes(availableBins, itemL, itemW, itemH, itemWeight, maxWeightLimit, volFactor, boxMargin);
+            evaluations.sort((a, b) => a.binVol - b.binVol);
+
+            list.innerHTML = evaluations.map(e => {
+                const isSelected = e.bin.id === currentPlan.bin.id;
+                const itemsToPut = Math.min(e.fitPerBox, currentPlan.itemsPerBox);
+                const fillRate = ((itemsToPut * singleItemVol) / e.binVol * 100).toFixed(1);
+
+                return `
+                    <div class="flex items-center justify-between p-2.5 rounded-xl border ${isSelected ? 'border-blue-500 bg-blue-50/50' : 'border-slate-200 bg-white hover:bg-slate-50'} text-xs">
+                        <div>
+                            <span class="font-bold text-slate-800 flex items-center gap-1.5">
+                                ${e.bin.name} ${isSelected ? '<span class="text-[10px] bg-blue-600 text-white px-1.5 py-0.2 rounded">Επιλεγμένο</span>' : ''}
+                            </span>
+                            <span class="text-slate-400 block text-[10px]">${e.bin.l} x ${e.bin.w} x ${e.bin.h} cm (${e.binVol.toLocaleString()} cm³)</span>
+                            <span class="text-slate-600 text-[11px] mt-0.5 block">Χωρητικότητα: <b>${e.fitPerBox} τμχ</b> (${(e.fitPerBox * itemWeight).toFixed(2)} kg) | Πληρότητα: <b>${fillRate}%</b></span>
                         </div>
-                        <div class="flex items-center gap-2 self-end sm:self-auto">
-                            <button onclick="open3DModal(${idx})" class="bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors border border-sky-200 flex items-center gap-1 shadow-2xs">
-                                <span>🧊</span> 3D Προβολή
-                            </button>
-                            <div class="text-right">
-                                <span class="text-xs font-extrabold block text-slate-800">
-                                    ${p.weightPerBox} kg <span class="text-[10px] text-slate-400 font-normal">(πραγματικό)</span>
-                                </span>
-                                <span class="text-[10px] font-semibold text-sky-700 block">
-                                    ${p.volWeightPerBox} kg <span class="text-[9px] text-sky-500">(ογκομετρικό)</span>
-                                </span>
-                            </div>
-                        </div>
+                        <button onclick="applyBoxOverride(${e.bin.id})" class="px-3 py-1.5 rounded-lg text-xs font-bold ${isSelected ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs'}" ${isSelected ? 'disabled' : ''}>
+                            Επιλογή
+                        </button>
                     </div>
                 `;
             }).join('');
 
-            resDiv.scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('boxOverrideModal').classList.remove('hidden');
+        }
+
+        function closeBoxOverrideModal() {
+            document.getElementById('boxOverrideModal').classList.add('hidden');
+            activeOverrideTarget = null;
+        }
+
+        function applyBoxOverride(selectedBinId) {
+            if (!activeOverrideTarget || !currentCalculation) return;
+            const { groupIdx, planIdx } = activeOverrideTarget;
+            const group = currentCalculation.groups[groupIdx];
+            const currentPlan = group.packingPlan[planIdx];
+
+            const selectedBin = availableBins.find(b => b.id === selectedBinId);
+            if (!selectedBin) return;
+
+            const { itemL, itemW, itemH, singleItemVol, itemWeight, volFactor, boxMargin } = currentCalculation;
+            const effectiveBinL = Math.max(0.1, selectedBin.l - boxMargin);
+            const effectiveBinW = Math.max(0.1, selectedBin.w - boxMargin);
+            const effectiveBinH = Math.max(0.1, selectedBin.h - boxMargin);
+
+            const fitRes = calculateFitPerBox(itemL, itemW, itemH, effectiveBinL, effectiveBinW, effectiveBinH);
+            const maxVolQty = fitRes.maxCount;
+            const fitPerBox = Math.min(maxVolQty, Math.floor(currentCalculation.maxWeightLimit / itemWeight));
+            const binVol = selectedBin.l * selectedBin.w * selectedBin.h;
+            const volWeight = binVol / volFactor;
+
+            // Recalculate packing for this specific box plan
+            const itemsInThisBox = Math.min(fitPerBox, currentPlan.itemsPerBox);
+            const fillRate = (itemsInThisBox * singleItemVol) / binVol;
+
+            group.packingPlan[planIdx] = {
+                bin: selectedBin,
+                count: currentPlan.count,
+                itemsPerBox: itemsInThisBox,
+                maxVolQty: maxVolQty,
+                orientation: fitRes.bestOrientation,
+                grid: fitRes.bestGrid,
+                totalItems: currentPlan.count * itemsInThisBox,
+                weightPerBox: (itemsInThisBox * itemWeight).toFixed(2),
+                volWeightPerBox: volWeight.toFixed(2),
+                chargeableWeightPerBox: Math.max(itemsInThisBox * itemWeight, volWeight).toFixed(2),
+                fillRatePercent: (fillRate * 100).toFixed(1),
+                isPartial: itemsInThisBox < maxVolQty
+            };
+
+            closeBoxOverrideModal();
+            renderResultsUI();
+            sendDataToSheet();
+            showToast(`✅ Το κιβώτιο άλλαξε σε ${selectedBin.name}!`);
         }
 
         /* 3D PACKING VISUALIZER LOGIC (THREE.JS) */
         let threeScene, threeCamera, threeRenderer, threeControls, animationFrameId;
 
-        function open3DModal(planIndex) {
-            if (!currentCalculation || !currentCalculation.packingPlan[planIndex]) return;
-            const plan = currentCalculation.packingPlan[planIndex];
+        function open3DModal(groupIdx, planIdx) {
+            if (!currentCalculation || !currentCalculation.groups[groupIdx]) return;
+            const plan = currentCalculation.groups[groupIdx].packingPlan[planIdx];
 
             const nx = plan.grid.nx;
             const ny = plan.grid.ny;
@@ -970,6 +1252,7 @@
             }
         });
 
+        /* EXPORT DATA TO GOOGLE SHEETS */
         function sendDataToSheet() {
             if (!currentCalculation) return;
 
@@ -982,10 +1265,13 @@
                 btn.innerHTML = `<span>⏳</span> Αποστολή...`;
             }
 
-            // Excludes volumetric weight from Google Sheets export string as requested
-            let columnKText = currentCalculation.packingPlan.map(p => {
-                return `${p.count}x ${p.bin.name} (${p.itemsPerBox}τμχ/${p.weightPerBox}kg)`;
-            }).join(' + ');
+            // Construct clean packing text for Column K
+            let groupTexts = currentCalculation.groups.map(g => {
+                let boxText = g.packingPlan.map(p => `${p.count}x ${p.bin.name} (${p.itemsPerBox}τμχ/${p.weightPerBox}kg)`).join(' + ');
+                return isSplitMode ? `[${g.name}]: ${boxText}` : boxText;
+            });
+
+            const columnKText = groupTexts.join(' | ');
 
             const payload = {
                 projectName: currentCalculation.projectName,
@@ -1015,6 +1301,7 @@
             });
         }
 
+        /* THERMAL LABEL PRINTING */
         function openThermalPrintModal() {
             if (!currentCalculation) return;
 
@@ -1024,47 +1311,50 @@
             let labelIndex = 1;
             const todayStr = new Date().toLocaleDateString('el-GR');
 
-            currentCalculation.packingPlan.forEach(plan => {
-                for (let i = 0; i < plan.count; i++) {
-                    const cleanBoxName = plan.bin.name.replace(/κούτα|κουτί/gi, 'Συσκευασία');
-                    const labelHtml = `
-                        <div class="thermal-label-preview">
-                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #000; padding-bottom: 2px;">
-                                <div style="font-weight: 800; font-size: 9px; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">
-                                    ATRION
-                                </div>
-                                <div style="font-weight: 800; font-size: 10.5px; text-transform: uppercase; letter-spacing: -0.2px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 120px;">
-                                    ${currentCalculation.projectName}
-                                </div>
-                                <div style="font-weight: 800; font-size: 9px; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">
-                                    ${labelIndex}/${currentCalculation.totalBoxesCount}
-                                </div>
-                            </div>
-
-                            <div style="display: flex; gap: 4px; margin: 2.5px 0;">
-                                <div style="flex: 1; border: 1.5px solid #000; border-radius: 3px; padding: 1.5px; text-align: center;">
-                                    <div style="font-size: 6.5px; font-weight: 700; text-transform: uppercase;">ΠΟΣΟΤΗΤΑ</div>
-                                    <div style="font-size: 13.5px; font-weight: 900; line-height: 1.1;">
-                                        ${plan.itemsPerBox} <span style="font-size: 7.5px; font-weight: 600;">τμχ</span>
+            currentCalculation.groups.forEach(group => {
+                const groupNameTag = isSplitMode ? ` - ${group.name}` : '';
+                group.packingPlan.forEach(plan => {
+                    for (let i = 0; i < plan.count; i++) {
+                        const cleanBoxName = plan.bin.name.replace(/κούτα|κουτί/gi, 'Συσκευασία');
+                        const labelHtml = `
+                            <div class="thermal-label-preview">
+                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #000; padding-bottom: 2px;">
+                                    <div style="font-weight: 800; font-size: 9px; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">
+                                        ATRION
+                                    </div>
+                                    <div style="font-weight: 800; font-size: 10px; text-transform: uppercase; letter-spacing: -0.2px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 120px;">
+                                        ${currentCalculation.projectName}${groupNameTag}
+                                    </div>
+                                    <div style="font-weight: 800; font-size: 9px; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">
+                                        ${labelIndex}/${currentCalculation.totalBoxesCount}
                                     </div>
                                 </div>
-                                <div style="flex: 1; border: 1.5px solid #000; border-radius: 3px; padding: 1.5px; text-align: center;">
-                                    <div style="font-size: 6.5px; font-weight: 700; text-transform: uppercase;">ΒΑΡΟΣ</div>
-                                    <div style="font-size: 11.5px; font-weight: 900; line-height: 1.1;">
-                                        ${plan.weightPerBox} <span style="font-size: 7.5px; font-weight: 600;">kg</span>
+
+                                <div style="display: flex; gap: 4px; margin: 2.5px 0;">
+                                    <div style="flex: 1; border: 1.5px solid #000; border-radius: 3px; padding: 1.5px; text-align: center;">
+                                        <div style="font-size: 6.5px; font-weight: 700; text-transform: uppercase;">ΠΟΣΟΤΗΤΑ</div>
+                                        <div style="font-size: 13.5px; font-weight: 900; line-height: 1.1;">
+                                            ${plan.itemsPerBox} <span style="font-size: 7.5px; font-weight: 600;">τμχ</span>
+                                        </div>
+                                    </div>
+                                    <div style="flex: 1; border: 1.5px solid #000; border-radius: 3px; padding: 1.5px; text-align: center;">
+                                        <div style="font-size: 6.5px; font-weight: 700; text-transform: uppercase;">ΒΑΡΟΣ</div>
+                                        <div style="font-size: 11.5px; font-weight: 900; line-height: 1.1;">
+                                            ${plan.weightPerBox} <span style="font-size: 7.5px; font-weight: 600;">kg</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 7.5px; font-weight: 700; border-top: 1px solid #000; padding-top: 1.5px;">
-                                <div>📦 ${cleanBoxName}</div>
-                                <div style="font-size: 6.5px; color: #444;">${todayStr}</div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 7.5px; font-weight: 700; border-top: 1px solid #000; padding-top: 1.5px;">
+                                    <div>📦 ${cleanBoxName}</div>
+                                    <div style="font-size: 6.5px; color: #444;">${todayStr}</div>
+                                </div>
                             </div>
-                        </div>
-                    `;
-                    modalContainer.innerHTML += labelHtml;
-                    labelIndex++;
-                }
+                        `;
+                        modalContainer.innerHTML += labelHtml;
+                        labelIndex++;
+                    }
+                });
             });
 
             document.getElementById('printModal').classList.remove('hidden');
@@ -1083,47 +1373,50 @@
             let labelIndex = 1;
             const todayStr = new Date().toLocaleDateString('el-GR');
 
-            currentCalculation.packingPlan.forEach(plan => {
-                for (let i = 0; i < plan.count; i++) {
-                    const cleanBoxName = plan.bin.name.replace(/κούτα|κουτί/gi, 'Συσκευασία');
-                    const printHtml = `
-                        <div class="thermal-label-print">
-                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #000; padding-bottom: 2px;">
-                                <div style="font-weight: 800; font-size: 9px; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">
-                                    ATRION
-                                </div>
-                                <div style="font-weight: 800; font-size: 10.5px; text-transform: uppercase; letter-spacing: -0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">
-                                    ${currentCalculation.projectName}
-                                </div>
-                                <div style="font-weight: 800; font-size: 9px; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">
-                                    ${labelIndex}/${currentCalculation.totalBoxesCount}
-                                </div>
-                            </div>
-
-                            <div style="display: flex; gap: 4px; margin: 2px 0;">
-                                <div style="flex: 1; border: 1.5px solid #000; border-radius: 3px; padding: 1.5px; text-align: center;">
-                                    <div style="font-size: 6.5px; font-weight: 700; text-transform: uppercase;">ΠΟΣΟΤΗΤΑ</div>
-                                    <div style="font-size: 13.5px; font-weight: 900; line-height: 1.1;">
-                                        ${plan.itemsPerBox} <span style="font-size: 7.5px; font-weight: 600;">τμχ</span>
+            currentCalculation.groups.forEach(group => {
+                const groupNameTag = isSplitMode ? ` - ${group.name}` : '';
+                group.packingPlan.forEach(plan => {
+                    for (let i = 0; i < plan.count; i++) {
+                        const cleanBoxName = plan.bin.name.replace(/κούτα|κουτί/gi, 'Συσκευασία');
+                        const printHtml = `
+                            <div class="thermal-label-print">
+                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #000; padding-bottom: 2px;">
+                                    <div style="font-weight: 800; font-size: 9px; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">
+                                        ATRION
+                                    </div>
+                                    <div style="font-weight: 800; font-size: 10px; text-transform: uppercase; letter-spacing: -0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">
+                                        ${currentCalculation.projectName}${groupNameTag}
+                                    </div>
+                                    <div style="font-weight: 800; font-size: 9px; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">
+                                        ${labelIndex}/${currentCalculation.totalBoxesCount}
                                     </div>
                                 </div>
-                                <div style="flex: 1; border: 1.5px solid #000; border-radius: 3px; padding: 1.5px; text-align: center;">
-                                    <div style="font-size: 6.5px; font-weight: 700; text-transform: uppercase;">ΒΑΡΟΣ</div>
-                                    <div style="font-size: 11.5px; font-weight: 900; line-height: 1.1;">
-                                        ${plan.weightPerBox} <span style="font-size: 7.5px; font-weight: 600;">kg</span>
+
+                                <div style="display: flex; gap: 4px; margin: 2px 0;">
+                                    <div style="flex: 1; border: 1.5px solid #000; border-radius: 3px; padding: 1.5px; text-align: center;">
+                                        <div style="font-size: 6.5px; font-weight: 700; text-transform: uppercase;">ΠΟΣΟΤΗΤΑ</div>
+                                        <div style="font-size: 13.5px; font-weight: 900; line-height: 1.1;">
+                                            ${plan.itemsPerBox} <span style="font-size: 7.5px; font-weight: 600;">τμχ</span>
+                                        </div>
+                                    </div>
+                                    <div style="flex: 1; border: 1.5px solid #000; border-radius: 3px; padding: 1.5px; text-align: center;">
+                                        <div style="font-size: 6.5px; font-weight: 700; text-transform: uppercase;">ΒΑΡΟΣ</div>
+                                        <div style="font-size: 11.5px; font-weight: 900; line-height: 1.1;">
+                                            ${plan.weightPerBox} <span style="font-size: 7.5px; font-weight: 600;">kg</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 7.5px; font-weight: 700; border-top: 1px solid #000; padding-top: 1.5px;">
-                                <div>📦 ${cleanBoxName}</div>
-                                <div style="font-size: 6.5px; color: #444;">${todayStr}</div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 7.5px; font-weight: 700; border-top: 1px solid #000; padding-top: 1.5px;">
+                                    <div>📦 ${cleanBoxName}</div>
+                                    <div style="font-size: 6.5px; color: #444;">${todayStr}</div>
+                                </div>
                             </div>
-                        </div>
-                    `;
-                    printSection.innerHTML += printHtml;
-                    labelIndex++;
-                }
+                        `;
+                        printSection.innerHTML += printHtml;
+                        labelIndex++;
+                    }
+                });
             });
 
             window.print();
@@ -1137,9 +1430,12 @@
             text += `Συνολικά Τεμάχια: ${currentCalculation.totalQty} τμχ | Πραγματικό Βάρος: ${currentCalculation.totalWeight} kg | Ογκομετρικό: ${currentCalculation.totalVolWeight} kg | Χρεώσιμο: ${currentCalculation.totalChargeable} kg\n`;
             text += `Απαιτούμενα Κιβώτια: ${currentCalculation.totalBoxesCount}\n\n`;
 
-            currentCalculation.packingPlan.forEach(p => {
-                const cleanBoxName = p.bin.name.replace(/κούτα|κουτί/gi, 'Συσκευασία');
-                text += `• ${p.count}x ${cleanBoxName} (${p.bin.l}x${p.bin.w}x${p.bin.h}cm) -> ${p.itemsPerBox}τμχ/κιβώτιο (${p.weightPerBox}kg | Ογκ: ${p.volWeightPerBox}kg | Πληρότητα: ${p.fillRatePercent}%)\n`;
+            currentCalculation.groups.forEach(g => {
+                if (isSplitMode) text += `📍 [${g.name} (${g.qty} τμχ)]\n`;
+                g.packingPlan.forEach(p => {
+                    const cleanBoxName = p.bin.name.replace(/κούτα|κουτί/gi, 'Συσκευασία');
+                    text += `• ${p.count}x ${cleanBoxName} (${p.bin.l}x${p.bin.w}x${p.bin.h}cm) -> ${p.itemsPerBox}τμχ/κιβώτιο (${p.weightPerBox}kg)\n`;
+                });
             });
 
             const textarea = document.createElement('textarea');
