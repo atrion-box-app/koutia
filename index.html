@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Έξυπνος Υπολογιστής Χαρτοκιβωτίων & Ογκομετρικού Βάρους</title>
+    <title>Υπολογιστής Χαρτοκιβωτίων & Ογκομετρικού Βάρους</title>
     <!-- Favicon Icon (📦) for browser tab -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
     <!-- Tailwind CSS for UI styling -->
@@ -87,10 +87,10 @@
         <!-- HEADER -->
         <div class="text-center mb-6">
             <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 flex items-center justify-center gap-2">
-                <span>📦</span> Έξυπνος Υπολογιστής Χαρτοκιβωτίων
+                <span>📦</span> Υπολογιστής Χαρτοκιβωτίων
             </h1>
             <p class="text-xs sm:text-sm text-slate-500 mt-1">
-                Βέλτιστη επιλογή κιβωτίων βάσει <b>Όγκου & Ογκομετρικού Βάρους (όριο 18 kg)</b>, Διαχωρισμός Προορισμών & Εκτύπωση.
+                Βέλτιστη επιλογή κιβωτίων βάσει <b>Όγκου & Ογκομετρικού Βάρους (όριο 18 kg)</b>, Ισομερής Κατανομή & Εκτύπωση.
             </p>
         </div>
 
@@ -152,7 +152,7 @@
                 </div>
             </div>
 
-            <!-- RIGHT COLUMN: SHIPMENT DETAILS & SPLIT DESTINATIONS -->
+            <!-- RIGHT COLUMN: SHIPMENT DETAILS & OPTIONS -->
             <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex flex-col justify-between">
                 <div class="space-y-4">
                     <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
@@ -196,7 +196,7 @@
                         </div>
                     </div>
 
-                    <!-- SAFETY TOLERANCES AND MARGINS (RIBBONS & CARTON LOSS) -->
+                    <!-- SAFETY TOLERANCES AND MARGINS -->
                     <div class="bg-indigo-50/70 p-3 rounded-xl border border-indigo-100 space-y-2.5">
                         <span class="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
                             <span>📐</span> Ανοχές Ασφαλείας & Αέρας Συσκευασίας
@@ -219,7 +219,7 @@
                         </div>
                     </div>
 
-                    <!-- ITEM WEIGHT & QUANTITY / SPLIT TOGGLE -->
+                    <!-- ITEM WEIGHT & QUANTITY -->
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1">Βάρος 1 Τεμαχίου (kg)</label>
@@ -227,7 +227,25 @@
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1">Συνολική Ποσότητα (τμχ)</label>
-                            <input type="number" id="itemQty" oninput="updateSplitTotals()" placeholder="π.χ. 100" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <input type="number" id="itemQty" oninput="updateSplitTotals()" placeholder="π.χ. 60" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <!-- EQUAL DISTRIBUTION TOGGLE (NEW FEATURE) -->
+                    <div class="bg-emerald-50/80 p-3 rounded-xl border border-emerald-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-xs font-bold text-emerald-900 block flex items-center gap-1.5">
+                                    <span>⚖️</span> Ισομερής Κατανομή Τεμαχίων
+                                </span>
+                                <span class="text-[10px] text-emerald-700 block mt-0.5">
+                                    Μοιράζει ομοιόμορφα τα τεμάχια στα κουτιά (π.χ. 3 κουτιά × 20 τμχ)
+                                </span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer shrink-0 ml-2">
+                                <input type="checkbox" id="equalDistToggle" class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                            </label>
                         </div>
                     </div>
 
@@ -283,7 +301,7 @@
                     </div>
                 </div>
 
-                <!-- CALCULATE BUTTON (SEPARATE FROM GOOGLE SHEETS EXP) -->
+                <!-- CALCULATE BUTTON -->
                 <button onclick="calculatePacking()" class="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2">
                     <span>🧮</span> Υπολογισμός Συσκευασίας
                 </button>
@@ -788,10 +806,61 @@
             }).filter(item => item.fitPerBox > 0);
         }
 
-        function packQuantity(qtyToPack, binEvaluations, singleItemVol, itemWeight) {
+        function packQuantity(qtyToPack, binEvaluations, singleItemVol, itemWeight, isEqualDist = false) {
             let remaining = qtyToPack;
             let plan = [];
 
+            if (isEqualDist) {
+                // Determine baseline max fit per box based on weight/vol
+                const maxCapacity = Math.max(...binEvaluations.map(e => e.fitPerBox));
+                const estBoxes = Math.ceil(qtyToPack / maxCapacity);
+                const itemsPerBoxTarget = Math.ceil(qtyToPack / estBoxes);
+
+                // Find smallest box fitting itemsPerBoxTarget
+                let candidateBins = binEvaluations
+                    .filter(e => e.fitPerBox >= itemsPerBoxTarget)
+                    .sort((a, b) => a.binVol - b.binVol);
+
+                let chosenBox = candidateBins.length > 0 ? candidateBins[0] : binEvaluations.sort((a, b) => b.fitPerBox - a.fitPerBox)[0];
+
+                let itemsLeft = qtyToPack;
+                while (itemsLeft > 0) {
+                    let itemsForThisBox = Math.min(itemsPerBoxTarget, itemsLeft);
+                    let packedVol = itemsForThisBox * singleItemVol;
+                    let fillRate = packedVol / chosenBox.binVol;
+
+                    plan.push({
+                        bin: chosenBox.bin,
+                        count: 1,
+                        itemsPerBox: itemsForThisBox,
+                        maxVolQty: chosenBox.maxVolQty,
+                        orientation: chosenBox.orientation,
+                        grid: chosenBox.grid,
+                        totalItems: itemsForThisBox,
+                        weightPerBox: (itemsForThisBox * itemWeight).toFixed(2),
+                        volWeightPerBox: chosenBox.volWeight.toFixed(2),
+                        chargeableWeightPerBox: Math.max(itemsForThisBox * itemWeight, chosenBox.volWeight).toFixed(2),
+                        fillRatePercent: (fillRate * 100).toFixed(1),
+                        isPartial: itemsForThisBox < itemsPerBoxTarget
+                    });
+                    itemsLeft -= itemsForThisBox;
+                }
+
+                // Group identical boxes in plan for display
+                let groupedPlan = [];
+                plan.forEach(item => {
+                    let existing = groupedPlan.find(g => g.bin.id === item.bin.id && g.itemsPerBox === item.itemsPerBox);
+                    if (existing) {
+                        existing.count += 1;
+                        existing.totalItems += item.itemsPerBox;
+                    } else {
+                        groupedPlan.push({ ...item });
+                    }
+                });
+                return groupedPlan;
+            }
+
+            // Standard Max Packing logic
             while (remaining > 0) {
                 let candidates = binEvaluations.map(e => {
                     const itemsToPut = Math.min(e.fitPerBox, remaining);
@@ -879,6 +948,7 @@
 
             const itemMargin = parseFloat(document.getElementById('itemMargin').value) || 0;
             const boxMargin = parseFloat(document.getElementById('boxMargin').value) || 0;
+            const isEqualDist = document.getElementById('equalDistToggle').checked;
 
             if (!rawItemL || !rawItemW || !rawItemH || !itemWeight || !totalQty || rawItemL <= 0 || rawItemW <= 0 || rawItemH <= 0 || itemWeight <= 0 || totalQty <= 0) {
                 showToast("⚠️ Παρακαλώ συμπληρώστε όλα τα στοιχεία του προϊόντος με έγκυρες τιμές.");
@@ -918,7 +988,7 @@
 
             // Calculate packing for each batch/destination
             let groups = targetBatches.map(batch => {
-                const plan = packQuantity(batch.qty, binEvaluations, singleItemVol, itemWeight);
+                const plan = packQuantity(batch.qty, binEvaluations, singleItemVol, itemWeight, isEqualDist);
                 return {
                     name: batch.name,
                     qty: batch.qty,
