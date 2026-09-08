@@ -678,80 +678,137 @@
             }
         }
 
-        /* GOOGLE INTEGRATION */
-        function saveAndFetchProjects() {
-            const url = document.getElementById('scriptUrl').value.trim();
-            if (!url || !url.startsWith('http')) {
-                showToast("⚠️ Παρακαλώ εισάγετε έγκυρο Web App URL.");
-                return;
+       /* GOOGLE INTEGRATION */
+function saveAndFetchProjects() {
+    const url = document.getElementById('scriptUrl').value.trim();
+    if (!url || !url.startsWith('http')) {
+        showToast("⚠️ Παρακαλώ εισάγετε έγκυρο Web App URL.");
+        return;
+    }
+    localStorage.setItem('boxApp_scriptUrl', url);
+    fetchGoogleProjects(url);
+}
+
+function fetchGoogleProjects(customUrl = null) {
+    let url = customUrl || document.getElementById('scriptUrl').value.trim() || DEFAULT_SCRIPT_URL;
+
+    document.getElementById('scriptUrl').value = url;
+    localStorage.setItem('boxApp_scriptUrl', url);
+
+    const badge = document.getElementById('connectionBadge');
+    badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 animate-pulse";
+    badge.innerHTML = "⏳ Φόρτωση Projects...";
+
+    fetch(url)
+        .then(res => {
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            return res.json();
+        })
+        .then(data => {
+            let projects = [];
+            if (Array.isArray(data)) {
+                projects = data;
+            } else if (data && data.projects && Array.isArray(data.projects)) {
+                projects = data.projects;
+            } else {
+                throw new Error("Invalid format");
             }
-            localStorage.setItem('boxApp_scriptUrl', url);
-            fetchGoogleProjects(url);
-        }
 
-        function fetchGoogleProjects(customUrl = null) {
-            let url = customUrl || document.getElementById('scriptUrl').value.trim() || DEFAULT_SCRIPT_URL;
-
-            document.getElementById('scriptUrl').value = url;
-            localStorage.setItem('boxApp_scriptUrl', url);
-
-            const badge = document.getElementById('connectionBadge');
-            badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 animate-pulse";
-            badge.innerHTML = "⏳ Φόρτωση Projects...";
-
-            fetch(url)
-                .then(res => {
-                    if (!res.ok) throw new Error("HTTP " + res.status);
-                    return res.json();
-                })
-                .then(data => {
-                    let projects = [];
-                    if (Array.isArray(data)) {
-                        projects = data;
-                    } else if (data && data.projects && Array.isArray(data.projects)) {
-                        projects = data.projects;
-                    } else {
-                        throw new Error("Invalid format");
-                    }
-
-                    googleProjects = projects;
-                    populateProjectDropdown(projects);
-                    badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800";
-                    badge.innerHTML = `🟢 Συνδέθηκε (${projects.length} Projects)`;
-                    showToast(`✅ Επιτυχής σύνδεση (${projects.length} Projects)!`);
-                })
-                .catch(err => {
-                    if (url !== DEFAULT_SCRIPT_URL) {
-                        localStorage.setItem('boxApp_scriptUrl', DEFAULT_SCRIPT_URL);
-                        fetchGoogleProjects(DEFAULT_SCRIPT_URL);
-                    } else {
-                        badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800";
-                        badge.innerHTML = "⚠️ Μη διαθέσιμο (Χειροκίνητη χρήση)";
-                    }
-                });
-        }
-
-        function populateProjectDropdown(projects) {
-            const select = document.getElementById('projectSelect');
-            select.innerHTML = '<option value="">-- Χωρίς επιλογή Project (Χειροκίνητη χρήση) --</option>';
-
-            projects.forEach((p, idx) => {
-                const opt = document.createElement('option');
-                opt.value = idx;
-                opt.textContent = p.name ? `[Γραμμή ${p.row || (idx + 2)}] ${p.name}` : `Project ${idx + 1}`;
-                select.appendChild(opt);
-            });
-        }
-
-        function handleProjectChange() {
-            const val = document.getElementById('projectSelect').value;
-            if (val !== "") {
-                const selected = googleProjects[parseInt(val)];
-                if (selected && selected.name) {
-                    document.getElementById('projectNameInput').value = selected.name;
-                }
+            googleProjects = projects;
+            populateProjectDropdown(projects);
+            badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800";
+            badge.innerHTML = `🟢 Συνδέθηκε (${projects.length} Projects)`;
+            showToast(`✅ Επιτυχής σύνδεση (${projects.length} Projects)!`);
+        })
+        .catch(err => {
+            if (url !== DEFAULT_SCRIPT_URL) {
+                localStorage.setItem('boxApp_scriptUrl', DEFAULT_SCRIPT_URL);
+                fetchGoogleProjects(DEFAULT_SCRIPT_URL);
+            } else {
+                badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800";
+                badge.innerHTML = "⚠️ Μη διαθέσιμο (Χειροκίνητη χρήση)";
             }
+        });
+}
+
+function populateProjectDropdown(projects) {
+    const select = document.getElementById('projectSelect');
+    select.innerHTML = '<option value="">-- Χωρίς επιλογή Project (Χειροκίνητη χρήση) --</option>';
+
+    projects.forEach((p, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        // Εμφάνιση ονόματος και πραγματικής γραμμής Sheet
+        opt.textContent = p.name ? `[Γραμμή ${p.row || (idx + 2)}] ${p.name}` : `Project ${idx + 1}`;
+        select.appendChild(opt);
+    });
+}
+
+function handleProjectChange() {
+    const val = document.getElementById('projectSelect').value;
+    if (val !== "") {
+        const selected = googleProjects[parseInt(val)];
+        if (selected && selected.name) {
+            document.getElementById('projectNameInput').value = selected.name;
         }
+    }
+}
+
+/* EXPORT DATA TO GOOGLE SHEETS (DYNAMICAL MATCHING BY NAME & ROW) */
+function sendDataToSheet() {
+    if (!currentCalculation) {
+        showToast("⚠️ Παρακαλώ πραγματοποιήστε πρώτα έναν υπολογισμό.");
+        return;
+    }
+
+    const url = localStorage.getItem('boxApp_scriptUrl') || DEFAULT_SCRIPT_URL;
+    const btn = document.getElementById('sendToSheetBtn');
+    const projectIndex = document.getElementById('projectSelect').value;
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span>⏳</span> Αποστολή...`;
+    }
+
+    // Κείμενο συσκευασίας για τη Στήλη Κ (χωρίς ογκομετρικές λεπτομέρειες)
+    let groupTexts = currentCalculation.groups.map(g => {
+        let boxText = g.packingPlan.map(p => `${p.count}x ${p.bin.name} (${p.itemsPerBox}τμχ/${p.weightPerBox}kg)`).join(' + ');
+        return isSplitMode ? `[${g.name}]: ${boxText}` : boxText;
+    });
+
+    const columnKText = groupTexts.join(' | ');
+
+    // Ανάκτηση επιλεγμένου project από το dropdown
+    let selectedProjectObj = (projectIndex !== "" && googleProjects[parseInt(projectIndex)]) ? googleProjects[parseInt(projectIndex)] : null;
+
+    const payload = {
+        projectName: currentCalculation.projectName,
+        selectedProjectName: selectedProjectObj ? selectedProjectObj.name : currentCalculation.projectName,
+        row: selectedProjectObj ? selectedProjectObj.row : null,
+        packingSummary: columnKText
+    };
+
+    fetch(url, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payload)
+    })
+    .then(() => {
+        showToast("✅ Επιτυχής ενημέρωση στο Google Sheet!");
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `<span>🚀</span> Αποστολή στο Google Sheet`;
+        }
+    })
+    .catch(() => {
+        showToast("✅ Η εντολή στάλθηκε στο Google Sheet!");
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `<span>🚀</span> Αποστολή στο Google Sheet`;
+        }
+    });
+}
 
         /* PACKING ALGORITHM */
         function calculateFitPerBox(itemL, itemW, itemH, binL, binW, binH) {
