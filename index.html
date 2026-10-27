@@ -1520,7 +1520,7 @@ function sendDataToSheet() {
             });
         }
 
-/* THERMAL LABEL PRINTING (62mm x 100mm - BROTHER DK-11202) */
+/* THERMAL LABEL PRINTING (62mm x 100mm - Μεγάλο Όνομα Project) */
         function openThermalPrintModal() {
             if (!currentCalculation) return;
 
@@ -1537,39 +1537,43 @@ function sendDataToSheet() {
                         const cleanBoxName = plan.bin.name.replace(/κούτα|κουτί/gi, 'Συσκευασία');
                         const labelHtml = `
                             <div class="thermal-label-preview">
-                                <!-- HEADER -->
-                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2.5px solid #000; padding-bottom: 4px;">
-                                    <div style="font-weight: 900; font-size: 16px; background: #000; color: #fff; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.5px;">
+                                <!-- HEADER: BRAND & BOX COUNTER -->
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 2px;">
+                                    <div style="font-weight: 900; font-size: 13px; background: #000; color: #fff; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.5px;">
                                         ATRION
                                     </div>
-                                    <div style="font-weight: 800; font-size: 15px; text-transform: uppercase; letter-spacing: -0.2px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 220px;">
-                                        ${currentCalculation.projectName}${groupNameTag}
-                                    </div>
-                                    <div style="font-weight: 900; font-size: 16px; background: #000; color: #fff; padding: 2px 8px; border-radius: 4px;">
+                                    <div style="font-weight: 900; font-size: 14px; background: #000; color: #fff; padding: 2px 8px; border-radius: 4px;">
                                         ${labelIndex} / ${currentCalculation.totalBoxesCount}
                                     </div>
                                 </div>
 
+                                <!-- PROJECT NAME (EXTRA LARGE) -->
+                                <div style="text-align: center; border-bottom: 2.5px solid #000; padding: 3px 0 5px 0; margin-bottom: 4px;">
+                                    <div style="font-weight: 900; font-size: 22px; text-transform: uppercase; letter-spacing: -0.3px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                        ${currentCalculation.projectName}${groupNameTag}
+                                    </div>
+                                </div>
+
                                 <!-- BODY: QUANTITY & WEIGHT -->
-                                <div style="display: flex; gap: 8px; margin: 6px 0; flex: 1;">
-                                    <div style="flex: 1; border: 2.5px solid #000; border-radius: 6px; padding: 4px 6px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
-                                        <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">ΠΟΣΟΤΗΤΑ</div>
-                                        <div style="font-size: 32px; font-weight: 900; line-height: 1;">
-                                            ${plan.itemsPerBox} <span style="font-size: 14px; font-weight: 700;">τμχ</span>
+                                <div style="display: flex; gap: 8px; margin: 4px 0; flex: 1;">
+                                    <div style="flex: 1; border: 2.5px solid #000; border-radius: 6px; padding: 4px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+                                        <div style="font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">ΠΟΣΟΤΗΤΑ</div>
+                                        <div style="font-size: 28px; font-weight: 900; line-height: 1;">
+                                            ${plan.itemsPerBox} <span style="font-size: 13px; font-weight: 700;">τμχ</span>
                                         </div>
                                     </div>
-                                    <div style="flex: 1; border: 2.5px solid #000; border-radius: 6px; padding: 4px 6px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
-                                        <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">ΒΑΡΟΣ</div>
-                                        <div style="font-size: 30px; font-weight: 900; line-height: 1;">
-                                            ${plan.weightPerBox} <span style="font-size: 14px; font-weight: 700;">kg</span>
+                                    <div style="flex: 1; border: 2.5px solid #000; border-radius: 6px; padding: 4px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+                                        <div style="font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">ΒΑΡΟΣ</div>
+                                        <div style="font-size: 26px; font-weight: 900; line-height: 1;">
+                                            ${plan.weightPerBox} <span style="font-size: 13px; font-weight: 700;">kg</span>
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- FOOTER -->
-                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 800; border-top: 2px solid #000; padding-top: 4px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; font-weight: 800; border-top: 2px solid #000; padding-top: 3px;">
                                     <div>📦 ${cleanBoxName}</div>
-                                    <div style="font-size: 11px; font-weight: 600; color: #333;">📅 ${todayStr}</div>
+                                    <div style="font-size: 10.5px; font-weight: 600; color: #333;">📅 ${todayStr}</div>
                                 </div>
                             </div>
                         `;
@@ -1598,39 +1602,43 @@ function sendDataToSheet() {
                         const cleanBoxName = plan.bin.name.replace(/κούτα|κουτί/gi, 'Συσκευασία');
                         const printHtml = `
                             <div class="thermal-label-print">
-                                <!-- HEADER -->
-                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2.5px solid #000; padding-bottom: 4px;">
-                                    <div style="font-weight: 900; font-size: 16px; background: #000; color: #fff; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.5px;">
+                                <!-- HEADER: BRAND & BOX COUNTER -->
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 2px;">
+                                    <div style="font-weight: 900; font-size: 13px; background: #000; color: #fff; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.5px;">
                                         ATRION
                                     </div>
-                                    <div style="font-weight: 800; font-size: 15px; text-transform: uppercase; letter-spacing: -0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px;">
-                                        ${currentCalculation.projectName}${groupNameTag}
-                                    </div>
-                                    <div style="font-weight: 900; font-size: 16px; background: #000; color: #fff; padding: 2px 8px; border-radius: 4px;">
+                                    <div style="font-weight: 900; font-size: 14px; background: #000; color: #fff; padding: 2px 8px; border-radius: 4px;">
                                         ${labelIndex} / ${currentCalculation.totalBoxesCount}
                                     </div>
                                 </div>
 
+                                <!-- PROJECT NAME (EXTRA LARGE) -->
+                                <div style="text-align: center; border-bottom: 2.5px solid #000; padding: 3px 0 5px 0; margin-bottom: 4px;">
+                                    <div style="font-weight: 900; font-size: 22px; text-transform: uppercase; letter-spacing: -0.3px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                        ${currentCalculation.projectName}${groupNameTag}
+                                    </div>
+                                </div>
+
                                 <!-- BODY: QUANTITY & WEIGHT -->
-                                <div style="display: flex; gap: 8px; margin: 6px 0; flex: 1;">
-                                    <div style="flex: 1; border: 2.5px solid #000; border-radius: 6px; padding: 4px 6px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
-                                        <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">ΠΟΣΟΤΗΤΑ</div>
-                                        <div style="font-size: 32px; font-weight: 900; line-height: 1;">
-                                            ${plan.itemsPerBox} <span style="font-size: 14px; font-weight: 700;">τμχ</span>
+                                <div style="display: flex; gap: 8px; margin: 4px 0; flex: 1;">
+                                    <div style="flex: 1; border: 2.5px solid #000; border-radius: 6px; padding: 4px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+                                        <div style="font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">ΠΟΣΟΤΗΤΑ</div>
+                                        <div style="font-size: 28px; font-weight: 900; line-height: 1;">
+                                            ${plan.itemsPerBox} <span style="font-size: 13px; font-weight: 700;">τμχ</span>
                                         </div>
                                     </div>
-                                    <div style="flex: 1; border: 2.5px solid #000; border-radius: 6px; padding: 4px 6px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
-                                        <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">ΒΑΡΟΣ</div>
-                                        <div style="font-size: 30px; font-weight: 900; line-height: 1;">
-                                            ${plan.weightPerBox} <span style="font-size: 14px; font-weight: 700;">kg</span>
+                                    <div style="flex: 1; border: 2.5px solid #000; border-radius: 6px; padding: 4px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+                                        <div style="font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">ΒΑΡΟΣ</div>
+                                        <div style="font-size: 26px; font-weight: 900; line-height: 1;">
+                                            ${plan.weightPerBox} <span style="font-size: 13px; font-weight: 700;">kg</span>
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- FOOTER -->
-                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 800; border-top: 2px solid #000; padding-top: 4px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; font-weight: 800; border-top: 2px solid #000; padding-top: 3px;">
                                     <div>📦 ${cleanBoxName}</div>
-                                    <div style="font-size: 11px; font-weight: 600; color: #333;">📅 ${todayStr}</div>
+                                    <div style="font-size: 10.5px; font-weight: 600; color: #333;">📅 ${todayStr}</div>
                                 </div>
                             </div>
                         `;
