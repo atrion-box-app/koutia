@@ -1400,14 +1400,14 @@ function init3DScene(plan) {
         threeControls.dampingFactor = 0.08;
     }
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
     threeScene.add(ambientLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.85);
     dirLight1.position.set(100, 150, 100);
     threeScene.add(dirLight1);
 
-    const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 0.4);
+    const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 0.45);
     dirLight2.position.set(-100, -100, -100);
     threeScene.add(dirLight2);
 
@@ -1415,6 +1415,7 @@ function init3DScene(plan) {
     const binW = plan.bin.w;
     const binH = plan.bin.h;
 
+    // Εξωτερικό περίβλημα χαρτοκιβωτίου
     const boxGeo = new THREE.BoxGeometry(binL, binH, binW);
     const boxEdges = new THREE.EdgesGeometry(boxGeo);
     const lineMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 });
@@ -1433,44 +1434,53 @@ function init3DScene(plan) {
     const [iL, iW, iH] = plan.orientation;
     const nx = Math.max(1, plan.grid.nx);
     const ny = Math.max(1, plan.grid.ny);
-    const totalItems = plan.itemsPerBox;
-
-    // Υπολογισμός πραγματικών στρώσεων καθ' ύψος βάσει των τεμαχίων
-    const perLayer = nx * ny;
-    const nz = Math.ceil(totalItems / perLayer);
+    const nz = Math.max(1, plan.grid.nz);
+    const targetItems = plan.itemsPerBox;
 
     const itemsGroup = new THREE.Group();
+
+    // Υλικά για τα κουτάκια
+    const itemGeo = new THREE.BoxGeometry(Math.max(0.5, iL - 0.3), Math.max(0.5, iH - 0.3), Math.max(0.5, iW - 0.3));
+    const itemMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.35, metalness: 0.1 });
+    const itemEdges = new THREE.EdgesGeometry(itemGeo);
+    const itemEdgeMat = new THREE.LineBasicMaterial({ color: 0x064e3b });
 
     const startX = -binL / 2 + iL / 2;
     const startY = -binH / 2 + iH / 2;
     const startZ = -binW / 2 + iW / 2;
 
-    let placedCount = 0;
-    const itemGeo = new THREE.BoxGeometry(Math.max(0.5, iL - 0.2), Math.max(0.5, iH - 0.2), Math.max(0.5, iW - 0.2));
-    const itemMat = new THREE.MeshStandardMaterial({
-        color: 0x10b981,
-        roughness: 0.3,
-        metalness: 0.1
-    });
-    const itemEdges = new THREE.EdgesGeometry(itemGeo);
-    const itemEdgeMat = new THREE.LineBasicMaterial({ color: 0x064e3b });
+    let placed = 0;
 
-    for (let iz = 0; iz < nz && placedCount < totalItems; iz++) {
-        for (let iy = 0; iy < ny && placedCount < totalItems; iy++) {
-            for (let ix = 0; ix < nx && placedCount < totalItems; ix++) {
-                const itemMesh = new THREE.Mesh(itemGeo, itemMat);
-                itemMesh.position.set(
-                    startX + ix * iL,
-                    startY + iz * iH,
-                    startZ + iy * iW
-                );
-
-                const edgeLine = new THREE.LineSegments(itemEdges, itemEdgeMat);
-                itemMesh.add(edgeLine);
-
-                itemsGroup.add(itemMesh);
-                placedCount++;
+    // 1. Τοποθέτηση βασικού πλέγματος (Primary Grid)
+    for (let iz = 0; iz < nz && placed < targetItems; iz++) {
+        for (let iy = 0; iy < ny && placed < targetItems; iy++) {
+            for (let ix = 0; ix < nx && placed < targetItems; ix++) {
+                const mesh = new THREE.Mesh(itemGeo, itemMat);
+                mesh.position.set(startX + ix * iL, startY + iz * iH, startZ + iy * iW);
+                mesh.add(new THREE.LineSegments(itemEdges, itemEdgeMat));
+                itemsGroup.add(mesh);
+                placed++;
             }
+        }
+    }
+
+    // 2. Τοποθέτηση επιπλέον τεμαχίων στον ελεύθερο χώρο (Residual Space)
+    if (placed < targetItems) {
+        const extraGeo = new THREE.BoxGeometry(Math.max(0.5, iL - 0.3), Math.max(0.5, iW - 0.3), Math.max(0.5, iH - 0.3));
+        const extraEdges = new THREE.EdgesGeometry(extraGeo);
+        const extraEdgeMat = new THREE.LineBasicMaterial({ color: 0x065f46 });
+        const sideZ = binW / 2 - iH / 2;
+
+        while (placed < targetItems) {
+            const extraMesh = new THREE.Mesh(extraGeo, itemMat);
+            const extraIdx = placed - (nx * ny * nz);
+            const extraX = -binL / 2 + iL / 2 + (extraIdx % 2) * iL;
+            const extraY = -binH / 2 + iW / 2 + Math.floor(extraIdx / 2) * iW;
+
+            extraMesh.position.set(extraX, extraY, sideZ);
+            extraMesh.add(new THREE.LineSegments(extraEdges, extraEdgeMat));
+            itemsGroup.add(extraMesh);
+            placed++;
         }
     }
 
