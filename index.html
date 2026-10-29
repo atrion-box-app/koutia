@@ -810,7 +810,7 @@ function sendDataToSheet() {
     });
 }
 
-        /* PACKING ALGORITHM */
+/* UPGRADED PACKING ALGORITHM WITH RESIDUAL SPACE / MIXED ORIENTATION FIT */
         function calculateFitPerBox(itemL, itemW, itemH, binL, binW, binH) {
             const orientations = [
                 [itemL, itemW, itemH], [itemL, itemH, itemW],
@@ -818,23 +818,66 @@ function sendDataToSheet() {
                 [itemH, itemL, itemW], [itemH, itemW, itemL]
             ];
 
-            let maxCount = 0;
+            let maxTotalCount = 0;
             let bestOrientation = orientations[0];
             let bestGrid = { nx: 0, ny: 0, nz: 0 };
 
+            function getSimpleGrid(iL, iW, iH, bL, bW, bH) {
+                if (iL <= 0 || iW <= 0 || iH <= 0 || bL < iL || bW < iW || bH < iH) return 0;
+                return Math.floor(bL / iL) * Math.floor(bW / iW) * Math.floor(bH / iH);
+            }
+
+            function getMaxFitInRegion(bL, bW, bH) {
+                if (bL <= 0 || bW <= 0 || bH <= 0) return 0;
+                let best = 0;
+                orientations.forEach(([rL, rW, rH]) => {
+                    const fit = getSimpleGrid(rL, rW, rH, bL, bW, bH);
+                    if (fit > best) best = fit;
+                });
+                return best;
+            }
+
             orientations.forEach(([iL, iW, iH]) => {
-                const countL = Math.floor(binL / iL);
-                const countW = Math.floor(binW / iW);
-                const countH = Math.floor(binH / iH);
-                const total = countL * countW * countH;
-                if (total > maxCount) {
-                    maxCount = total;
+                const nx = Math.floor(binL / iL);
+                const ny = Math.floor(binW / iW);
+                const nz = Math.floor(binH / iH);
+                const primaryCount = nx * ny * nz;
+
+                if (primaryCount === 0) return;
+
+                const usedL = nx * iL;
+                const usedW = ny * iW;
+                const usedH = nz * iH;
+
+                const remL = Math.max(0, binL - usedL);
+                const remW = Math.max(0, binW - usedW);
+                const remH = Math.max(0, binH - usedH);
+
+                // Έλεγχος υπολειπόμενων ζωνών (Residual Sub-Volumes)
+                const addA1 = getMaxFitInRegion(remL, binW, binH);
+                const addA2 = getMaxFitInRegion(usedL, remW, binH);
+                const addA3 = getMaxFitInRegion(usedL, usedW, remH);
+                const totalA = primaryCount + addA1 + addA2 + addA3;
+
+                const addB1 = getMaxFitInRegion(binL, remW, binH);
+                const addB2 = getMaxFitInRegion(remL, usedW, binH);
+                const addB3 = getMaxFitInRegion(usedL, usedW, remH);
+                const totalB = primaryCount + addB1 + addB2 + addB3;
+
+                const currentBest = Math.max(primaryCount, totalA, totalB);
+
+                if (currentBest > maxTotalCount) {
+                    maxTotalCount = currentBest;
                     bestOrientation = [iL, iW, iH];
-                    bestGrid = { nx: countL, ny: countW, nz: countH };
+                    bestGrid = { nx, ny, nz };
                 }
             });
 
-            return { maxCount, bestOrientation, bestGrid };
+            return { 
+                maxCount: maxTotalCount, 
+                bestOrientation, 
+                bestGrid 
+            };
         }
 
         function evaluateCandidateBoxes(activeBinsList, itemL, itemW, itemH, itemWeight, maxWeightLimit, volFactor, boxMargin) {
