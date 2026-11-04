@@ -18,7 +18,7 @@
             background-color: #f8fafc;
         }
 
-/* SCREEN STYLES FOR THERMAL LABELS MODAL (62mm x 100mm Landscape Preview) */
+        /* SCREEN STYLES FOR THERMAL LABELS MODAL (62mm x 100mm Landscape Preview) */
         .thermal-label-preview {
             width: 100mm;
             height: 62mm;
@@ -44,23 +44,32 @@
                 margin: 0;
             }
             html, body {
-                width: 100mm;
-                height: 62mm;
+                width: 100mm !important;
+                height: 62mm !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 background: #ffffff !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
-            #appContainer, #toastNotification, .no-print, #printModal, #boxOverrideModal {
+            body > :not(#printSection) {
+                display: none !important;
+            }
+            #appContainer, #toastNotification, .no-print, #printModal, #boxOverrideModal, #modal3D {
                 display: none !important;
             }
             #printSection {
                 display: block !important;
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
                 width: 100mm !important;
-                height: 62mm !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                visibility: visible !important;
+            }
+            #printSection * {
+                visibility: visible !important;
             }
             .thermal-label-print {
                 width: 100mm !important;
@@ -231,7 +240,7 @@
                         </div>
                     </div>
 
-                    <!-- EQUAL DISTRIBUTION TOGGLE (NEW FEATURE) -->
+                    <!-- EQUAL DISTRIBUTION TOGGLE -->
                     <div class="bg-emerald-50/80 p-3 rounded-xl border border-emerald-200">
                         <div class="flex items-center justify-between">
                             <div>
@@ -393,7 +402,7 @@
         </div>
     </div>
 
-<!-- PRINT PREVIEW MODAL -->
+    <!-- PRINT PREVIEW MODAL -->
     <div id="printModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
         <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[90vh] flex flex-col overflow-hidden">
             <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
@@ -421,8 +430,8 @@
         </div>
     </div>
 
-    <!-- HIDDEN PRINT CONTAINER FOR BROTHER PRINTER -->
-    <div id="printSection" class="hidden"></div>
+    <!-- PRINT SECTION FOR BROTHER PRINTER -->
+    <div id="printSection" style="display: none;"></div>
 
     <!-- TOAST NOTIFICATION -->
     <div id="toastNotification" class="fixed bottom-4 right-4 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl text-xs font-semibold hidden transition-all z-50 flex items-center gap-2">
@@ -434,7 +443,7 @@
         <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[95vh] flex flex-col overflow-hidden">
             <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
                 <div>
-                    <h3 class="font-bold text-sm sm:text-base flex items-center gap-2">
+                    <h3 class="font-bold text-sm sm:base flex items-center gap-2">
                         <span>🧊</span> 3D Αναπαράσταση Τοποθέτησης
                     </h3>
                     <p id="modal3DBoxName" class="text-xs text-sky-400 font-semibold mt-0.5"></p>
@@ -478,10 +487,8 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        // Exact Correct Active Google Script URL
         const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_9oSxN5ra8UNwCoZclAwN0jEtQeYf_SlsfwPUa4zX0FGxU4YtcE11OzMW5ufmQ9e4/exec';
 
-        // 32 Default Warehouse Boxes with active status
         const DEFAULT_BINS = [
             { id: 1, name: "Κούτα 70x50x40", l: 70, w: 50, h: 40, active: true },
             { id: 2, name: "Κούτα 60x50x40", l: 60, w: 50, h: 40, active: true },
@@ -523,7 +530,6 @@
         let activeOverrideTarget = null;
         let recentCalculationsHistory = [];
 
-        // Split destinations state
         let isSplitMode = false;
         let destinations = [
             { id: 1, name: "Προορισμός 1", qty: 0 }
@@ -537,7 +543,6 @@
             }
             document.getElementById('scriptUrl').value = savedUrl;
 
-            // Load recent calculation history
             try {
                 const savedHistory = localStorage.getItem('boxApp_recentHistory');
                 if (savedHistory) recentCalculationsHistory = JSON.parse(savedHistory);
@@ -606,7 +611,6 @@
             renderBinsList();
         }
 
-        /* SPLIT DESTINATIONS LOGIC */
         function toggleSplitMode() {
             isSplitMode = document.getElementById('splitModeToggle').checked;
             const container = document.getElementById('splitSectionContainer');
@@ -678,139 +682,80 @@
             }
         }
 
-       /* GOOGLE INTEGRATION */
-function saveAndFetchProjects() {
-    const url = document.getElementById('scriptUrl').value.trim();
-    if (!url || !url.startsWith('http')) {
-        showToast("⚠️ Παρακαλώ εισάγετε έγκυρο Web App URL.");
-        return;
-    }
-    localStorage.setItem('boxApp_scriptUrl', url);
-    fetchGoogleProjects(url);
-}
-
-function fetchGoogleProjects(customUrl = null) {
-    let url = customUrl || document.getElementById('scriptUrl').value.trim() || DEFAULT_SCRIPT_URL;
-
-    document.getElementById('scriptUrl').value = url;
-    localStorage.setItem('boxApp_scriptUrl', url);
-
-    const badge = document.getElementById('connectionBadge');
-    badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 animate-pulse";
-    badge.innerHTML = "⏳ Φόρτωση Projects...";
-
-    fetch(url)
-        .then(res => {
-            if (!res.ok) throw new Error("HTTP " + res.status);
-            return res.json();
-        })
-        .then(data => {
-            let projects = [];
-            if (Array.isArray(data)) {
-                projects = data;
-            } else if (data && data.projects && Array.isArray(data.projects)) {
-                projects = data.projects;
-            } else {
-                throw new Error("Invalid format");
+        function saveAndFetchProjects() {
+            const url = document.getElementById('scriptUrl').value.trim();
+            if (!url || !url.startsWith('http')) {
+                showToast("⚠️ Παρακαλώ εισάγετε έγκυρο Web App URL.");
+                return;
             }
+            localStorage.setItem('boxApp_scriptUrl', url);
+            fetchGoogleProjects(url);
+        }
 
-            googleProjects = projects;
-            populateProjectDropdown(projects);
-            badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800";
-            badge.innerHTML = `🟢 Συνδέθηκε (${projects.length} Projects)`;
-            showToast(`✅ Επιτυχής σύνδεση (${projects.length} Projects)!`);
-        })
-        .catch(err => {
-            if (url !== DEFAULT_SCRIPT_URL) {
-                localStorage.setItem('boxApp_scriptUrl', DEFAULT_SCRIPT_URL);
-                fetchGoogleProjects(DEFAULT_SCRIPT_URL);
-            } else {
-                badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800";
-                badge.innerHTML = "⚠️ Μη διαθέσιμο (Χειροκίνητη χρήση)";
+        function fetchGoogleProjects(customUrl = null) {
+            let url = customUrl || document.getElementById('scriptUrl').value.trim() || DEFAULT_SCRIPT_URL;
+
+            document.getElementById('scriptUrl').value = url;
+            localStorage.setItem('boxApp_scriptUrl', url);
+
+            const badge = document.getElementById('connectionBadge');
+            badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 animate-pulse";
+            badge.innerHTML = "⏳ Φόρτωση Projects...";
+
+            fetch(url)
+                .then(res => {
+                    if (!res.ok) throw new Error("HTTP " + res.status);
+                    return res.json();
+                })
+                .then(data => {
+                    let projects = [];
+                    if (Array.isArray(data)) {
+                        projects = data;
+                    } else if (data && data.projects && Array.isArray(data.projects)) {
+                        projects = data.projects;
+                    } else {
+                        throw new Error("Invalid format");
+                    }
+
+                    googleProjects = projects;
+                    populateProjectDropdown(projects);
+                    badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800";
+                    badge.innerHTML = `🟢 Συνδέθηκε (${projects.length} Projects)`;
+                    showToast(`✅ Επιτυχής σύνδεση (${projects.length} Projects)!`);
+                })
+                .catch(err => {
+                    if (url !== DEFAULT_SCRIPT_URL) {
+                        localStorage.setItem('boxApp_scriptUrl', DEFAULT_SCRIPT_URL);
+                        fetchGoogleProjects(DEFAULT_SCRIPT_URL);
+                    } else {
+                        badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800";
+                        badge.innerHTML = "⚠️ Μη διαθέσιμο (Χειροκίνητη χρήση)";
+                    }
+                });
+        }
+
+        function populateProjectDropdown(projects) {
+            const select = document.getElementById('projectSelect');
+            select.innerHTML = '<option value="">-- Χωρίς επιλογή Project (Χειροκίνητη χρήση) --</option>';
+
+            projects.forEach((p, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.textContent = p.name ? `[Γραμμή ${p.row || (idx + 2)}] ${p.name}` : `Project ${idx + 1}`;
+                select.appendChild(opt);
+            });
+        }
+
+        function handleProjectChange() {
+            const val = document.getElementById('projectSelect').value;
+            if (val !== "") {
+                const selected = googleProjects[parseInt(val)];
+                if (selected && selected.name) {
+                    document.getElementById('projectNameInput').value = selected.name;
+                }
             }
-        });
-}
-
-function populateProjectDropdown(projects) {
-    const select = document.getElementById('projectSelect');
-    select.innerHTML = '<option value="">-- Χωρίς επιλογή Project (Χειροκίνητη χρήση) --</option>';
-
-    projects.forEach((p, idx) => {
-        const opt = document.createElement('option');
-        opt.value = idx;
-        // Εμφάνιση ονόματος και πραγματικής γραμμής Sheet
-        opt.textContent = p.name ? `[Γραμμή ${p.row || (idx + 2)}] ${p.name}` : `Project ${idx + 1}`;
-        select.appendChild(opt);
-    });
-}
-
-function handleProjectChange() {
-    const val = document.getElementById('projectSelect').value;
-    if (val !== "") {
-        const selected = googleProjects[parseInt(val)];
-        if (selected && selected.name) {
-            document.getElementById('projectNameInput').value = selected.name;
         }
-    }
-}
 
-/* EXPORT DATA TO GOOGLE SHEETS (DYNAMICAL MATCHING BY NAME & ROW) */
-function sendDataToSheet() {
-    if (!currentCalculation) {
-        showToast("⚠️ Παρακαλώ πραγματοποιήστε πρώτα έναν υπολογισμό.");
-        return;
-    }
-
-    const url = localStorage.getItem('boxApp_scriptUrl') || DEFAULT_SCRIPT_URL;
-    const btn = document.getElementById('sendToSheetBtn');
-    const projectIndex = document.getElementById('projectSelect').value;
-
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = `<span>⏳</span> Αποστολή...`;
-    }
-
-    // Κείμενο συσκευασίας για τη Στήλη Κ (χωρίς ογκομετρικές λεπτομέρειες)
-    let groupTexts = currentCalculation.groups.map(g => {
-        let boxText = g.packingPlan.map(p => `${p.count}x ${p.bin.name} (${p.itemsPerBox}τμχ/${p.weightPerBox}kg)`).join(' + ');
-        return isSplitMode ? `[${g.name}]: ${boxText}` : boxText;
-    });
-
-    const columnKText = groupTexts.join(' | ');
-
-    // Ανάκτηση επιλεγμένου project από το dropdown
-    let selectedProjectObj = (projectIndex !== "" && googleProjects[parseInt(projectIndex)]) ? googleProjects[parseInt(projectIndex)] : null;
-
-    const payload = {
-        projectName: currentCalculation.projectName,
-        selectedProjectName: selectedProjectObj ? selectedProjectObj.name : currentCalculation.projectName,
-        row: selectedProjectObj ? selectedProjectObj.row : null,
-        packingSummary: columnKText
-    };
-
-    fetch(url, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify(payload)
-    })
-    .then(() => {
-        showToast("✅ Επιτυχής ενημέρωση στο Google Sheet!");
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = `<span>🚀</span> Αποστολή στο Google Sheet`;
-        }
-    })
-    .catch(() => {
-        showToast("✅ Η εντολή στάλθηκε στο Google Sheet!");
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = `<span>🚀</span> Αποστολή στο Google Sheet`;
-        }
-    });
-}
-
-/* UPGRADED PACKING ALGORITHM WITH RESIDUAL SPACE / MIXED ORIENTATION FIT */
         function calculateFitPerBox(itemL, itemW, itemH, binL, binW, binH) {
             const orientations = [
                 [itemL, itemW, itemH], [itemL, itemH, itemW],
@@ -822,52 +767,15 @@ function sendDataToSheet() {
             let bestOrientation = orientations[0];
             let bestGrid = { nx: 0, ny: 0, nz: 0 };
 
-            function getSimpleGrid(iL, iW, iH, bL, bW, bH) {
-                if (iL <= 0 || iW <= 0 || iH <= 0 || bL < iL || bW < iW || bH < iH) return 0;
-                return Math.floor(bL / iL) * Math.floor(bW / iW) * Math.floor(bH / iH);
-            }
-
-            function getMaxFitInRegion(bL, bW, bH) {
-                if (bL <= 0 || bW <= 0 || bH <= 0) return 0;
-                let best = 0;
-                orientations.forEach(([rL, rW, rH]) => {
-                    const fit = getSimpleGrid(rL, rW, rH, bL, bW, bH);
-                    if (fit > best) best = fit;
-                });
-                return best;
-            }
-
             orientations.forEach(([iL, iW, iH]) => {
+                if (iL <= 0 || iW <= 0 || iH <= 0 || binL < iL || binW < iW || binH < iH) return;
                 const nx = Math.floor(binL / iL);
                 const ny = Math.floor(binW / iW);
                 const nz = Math.floor(binH / iH);
-                const primaryCount = nx * ny * nz;
+                const total = nx * ny * nz;
 
-                if (primaryCount === 0) return;
-
-                const usedL = nx * iL;
-                const usedW = ny * iW;
-                const usedH = nz * iH;
-
-                const remL = Math.max(0, binL - usedL);
-                const remW = Math.max(0, binW - usedW);
-                const remH = Math.max(0, binH - usedH);
-
-                // Έλεγχος υπολειπόμενων ζωνών (Residual Sub-Volumes)
-                const addA1 = getMaxFitInRegion(remL, binW, binH);
-                const addA2 = getMaxFitInRegion(usedL, remW, binH);
-                const addA3 = getMaxFitInRegion(usedL, usedW, remH);
-                const totalA = primaryCount + addA1 + addA2 + addA3;
-
-                const addB1 = getMaxFitInRegion(binL, remW, binH);
-                const addB2 = getMaxFitInRegion(remL, usedW, binH);
-                const addB3 = getMaxFitInRegion(usedL, usedW, remH);
-                const totalB = primaryCount + addB1 + addB2 + addB3;
-
-                const currentBest = Math.max(primaryCount, totalA, totalB);
-
-                if (currentBest > maxTotalCount) {
-                    maxTotalCount = currentBest;
+                if (total > maxTotalCount) {
+                    maxTotalCount = total;
                     bestOrientation = [iL, iW, iH];
                     bestGrid = { nx, ny, nz };
                 }
@@ -911,12 +819,10 @@ function sendDataToSheet() {
             let plan = [];
 
             if (isEqualDist) {
-                // Determine baseline max fit per box based on weight/vol
                 const maxCapacity = Math.max(...binEvaluations.map(e => e.fitPerBox));
                 const estBoxes = Math.ceil(qtyToPack / maxCapacity);
                 const itemsPerBoxTarget = Math.ceil(qtyToPack / estBoxes);
 
-                // Find smallest box fitting itemsPerBoxTarget
                 let candidateBins = binEvaluations
                     .filter(e => e.fitPerBox >= itemsPerBoxTarget)
                     .sort((a, b) => a.binVol - b.binVol);
@@ -946,7 +852,6 @@ function sendDataToSheet() {
                     itemsLeft -= itemsForThisBox;
                 }
 
-                // Group identical boxes in plan for display
                 let groupedPlan = [];
                 plan.forEach(item => {
                     let existing = groupedPlan.find(g => g.bin.id === item.bin.id && g.itemsPerBox === item.itemsPerBox);
@@ -960,7 +865,6 @@ function sendDataToSheet() {
                 return groupedPlan;
             }
 
-            // Standard Max Packing logic
             while (remaining > 0) {
                 let candidates = binEvaluations.map(e => {
                     const itemsToPut = Math.min(e.fitPerBox, remaining);
@@ -981,7 +885,6 @@ function sendDataToSheet() {
                     };
                 });
 
-                // Sort: 1. Max items, 2. Smallest volume, 3. Highest fill rate
                 candidates.sort((a, b) => {
                     if (b.itemsToPut !== a.itemsToPut) return b.itemsToPut - a.itemsToPut;
                     if (a.binVol !== b.binVol) return a.binVol - b.binVol;
@@ -1055,7 +958,6 @@ function sendDataToSheet() {
                 return;
             }
 
-            // Check Split Mode validation
             let targetBatches = [];
             if (isSplitMode) {
                 const totalAssigned = destinations.reduce((sum, d) => sum + (d.qty || 0), 0);
@@ -1073,7 +975,6 @@ function sendDataToSheet() {
             const itemH = rawItemH + itemMargin;
             const singleItemVol = itemL * itemW * itemH;
 
-            // Only use warehouse boxes marked as active
             const activeWarehouseBins = availableBins.filter(b => b.active);
             if (activeWarehouseBins.length === 0) {
                 showToast("⚠️ Δεν υπάρχει κανένα ενεργό κουτί στη λίστα αποθήκης!");
@@ -1086,7 +987,6 @@ function sendDataToSheet() {
                 return;
             }
 
-            // Calculate packing for each batch/destination
             let groups = targetBatches.map(batch => {
                 const plan = packQuantity(batch.qty, binEvaluations, singleItemVol, itemWeight, isEqualDist);
                 return {
@@ -1096,7 +996,6 @@ function sendDataToSheet() {
                 };
             });
 
-            // Flatten calculations for totals
             let totalBoxesCount = 0;
             let totalVolWeight = 0;
             let totalChargeable = 0;
@@ -1128,14 +1027,11 @@ function sendDataToSheet() {
                 groups
             };
 
-            // Add calculation to recent history drafts
             saveToRecentHistory(currentCalculation);
-
             renderResultsUI();
             showToast("✅ Ο υπολογισμός ολοκληρώθηκε επιτυχώς!");
         }
 
-        /* RECENT HISTORY LOGIC */
         function saveToRecentHistory(calcData) {
             recentCalculationsHistory.unshift(calcData);
             if (recentCalculationsHistory.length > 10) {
@@ -1267,7 +1163,6 @@ function sendDataToSheet() {
             resDiv.scrollIntoView({ behavior: 'smooth' });
         }
 
-        /* MANUAL BOX OVERRIDE MODAL */
         function openBoxOverrideModal(groupIdx, planIdx) {
             if (!currentCalculation) return;
             activeOverrideTarget = { groupIdx, planIdx };
@@ -1276,7 +1171,6 @@ function sendDataToSheet() {
             const list = document.getElementById('overrideOptionsList');
             const { itemL, itemW, itemH, singleItemVol, itemWeight, maxWeightLimit, volFactor, boxMargin } = currentCalculation;
 
-            // Evaluate all warehouse boxes
             const evaluations = evaluateCandidateBoxes(availableBins, itemL, itemW, itemH, itemWeight, maxWeightLimit, volFactor, boxMargin);
             evaluations.sort((a, b) => a.binVol - b.binVol);
 
@@ -1329,7 +1223,6 @@ function sendDataToSheet() {
             const binVol = selectedBin.l * selectedBin.w * selectedBin.h;
             const volWeight = binVol / volFactor;
 
-            // Recalculate packing for this specific box plan
             const itemsInThisBox = Math.min(fitPerBox, currentPlan.itemsPerBox);
             const fillRate = (itemsInThisBox * singleItemVol) / binVol;
 
@@ -1353,7 +1246,6 @@ function sendDataToSheet() {
             showToast(`✅ Το κιβώτιο άλλαξε σε ${selectedBin.name}!`);
         }
 
-        /* 3D PACKING VISUALIZER LOGIC (THREE.JS) */
         let threeScene, threeCamera, threeRenderer, threeControls, animationFrameId;
 
         function open3DModal(groupIdx, planIdx) {
@@ -1362,10 +1254,10 @@ function sendDataToSheet() {
 
             const nx = plan.grid.nx;
             const ny = plan.grid.ny;
-            const actualNz = (nx && ny) ? Math.ceil(plan.itemsPerBox / (nx * ny)) : plan.grid.nz;
+            const actualNz = (nx && ny) ? Math.min(plan.grid.nz, Math.ceil(plan.itemsPerBox / (nx * ny))) : plan.grid.nz;
 
             document.getElementById('modal3DBoxName').innerText = `${plan.bin.name} (${plan.bin.l} × ${plan.bin.w} × ${plan.bin.h} cm)`;
-            document.getElementById('modal3DGridInfo').innerText = `${nx} κατά μήκος × ${ny} κατά πλάτος × ${actualNz} καθ' ύψος${actualNz < plan.grid.nz ? ` (χωρητικότητα έως ${plan.grid.nz})` : ''}`;
+            document.getElementById('modal3DGridInfo').innerText = `${nx} κατά μήκος × ${ny} κατά πλάτος × ${actualNz} καθ' ύψος`;
             document.getElementById('modal3DOrientInfo').innerText = `${plan.orientation[0]} cm × ${plan.orientation[1]} cm × ${plan.orientation[2]} cm`;
             document.getElementById('modal3DCountInfo').innerText = `Τοποθετούνται ${plan.itemsPerBox} τμχ στο κουτί (${plan.weightPerBox} kg | Ογκομετρικό: ${plan.volWeightPerBox} kg).`;
             document.getElementById('modal3DFillRateBadge').innerText = `Πληρότητα: ${plan.fillRatePercent}%`;
@@ -1377,136 +1269,113 @@ function sendDataToSheet() {
             }, 50);
         }
 
-function init3DScene(plan) {
-    const container = document.getElementById('threeCanvasContainer');
-    container.innerHTML = '';
+        function init3DScene(plan) {
+            const container = document.getElementById('threeCanvasContainer');
+            container.innerHTML = '';
 
-    const width = container.clientWidth || 500;
-    const height = container.clientHeight || 320;
+            const width = container.clientWidth || 500;
+            const height = container.clientHeight || 320;
 
-    threeScene = new THREE.Scene();
-    threeScene.background = new THREE.Color(0x0b132b);
+            threeScene = new THREE.Scene();
+            threeScene.background = new THREE.Color(0x0b132b);
 
-    threeCamera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+            threeCamera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
 
-    threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    threeRenderer.setSize(width, height);
-    threeRenderer.setPixelRatio(window.devicePixelRatio);
-    container.appendChild(threeRenderer.domElement);
+            threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            threeRenderer.setSize(width, height);
+            threeRenderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(threeRenderer.domElement);
 
-    if (window.THREE.OrbitControls) {
-        threeControls = new THREE.OrbitControls(threeCamera, threeRenderer.domElement);
-        threeControls.enableDamping = true;
-        threeControls.dampingFactor = 0.08;
-    }
-
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
-    threeScene.add(ambientLight);
-
-    const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.85);
-    dirLight1.position.set(100, 150, 100);
-    threeScene.add(dirLight1);
-
-    const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 0.45);
-    dirLight2.position.set(-100, -100, -100);
-    threeScene.add(dirLight2);
-
-    const binL = plan.bin.l;
-    const binW = plan.bin.w;
-    const binH = plan.bin.h;
-
-    // Εξωτερικό περίβλημα χαρτοκιβωτίου
-    const boxGeo = new THREE.BoxGeometry(binL, binH, binW);
-    const boxEdges = new THREE.EdgesGeometry(boxGeo);
-    const lineMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 });
-    const wireframe = new THREE.LineSegments(boxEdges, lineMat);
-    threeScene.add(wireframe);
-
-    const boxMat = new THREE.MeshPhongMaterial({
-        color: 0x0284c7,
-        transparent: true,
-        opacity: 0.12,
-        side: THREE.DoubleSide
-    });
-    const boxMesh = new THREE.Mesh(boxGeo, boxMat);
-    threeScene.add(boxMesh);
-
-    const [iL, iW, iH] = plan.orientation;
-    const nx = Math.max(1, plan.grid.nx);
-    const ny = Math.max(1, plan.grid.ny);
-    const nz = Math.max(1, plan.grid.nz);
-    const targetItems = plan.itemsPerBox;
-
-    const itemsGroup = new THREE.Group();
-
-    // Υλικά για τα κουτάκια
-    const itemGeo = new THREE.BoxGeometry(Math.max(0.5, iL - 0.3), Math.max(0.5, iH - 0.3), Math.max(0.5, iW - 0.3));
-    const itemMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.35, metalness: 0.1 });
-    const itemEdges = new THREE.EdgesGeometry(itemGeo);
-    const itemEdgeMat = new THREE.LineBasicMaterial({ color: 0x064e3b });
-
-    const startX = -binL / 2 + iL / 2;
-    const startY = -binH / 2 + iH / 2;
-    const startZ = -binW / 2 + iW / 2;
-
-    let placed = 0;
-
-    // 1. Τοποθέτηση βασικού πλέγματος (Primary Grid)
-    for (let iz = 0; iz < nz && placed < targetItems; iz++) {
-        for (let iy = 0; iy < ny && placed < targetItems; iy++) {
-            for (let ix = 0; ix < nx && placed < targetItems; ix++) {
-                const mesh = new THREE.Mesh(itemGeo, itemMat);
-                mesh.position.set(startX + ix * iL, startY + iz * iH, startZ + iy * iW);
-                mesh.add(new THREE.LineSegments(itemEdges, itemEdgeMat));
-                itemsGroup.add(mesh);
-                placed++;
+            if (window.THREE.OrbitControls) {
+                threeControls = new THREE.OrbitControls(threeCamera, threeRenderer.domElement);
+                threeControls.enableDamping = true;
+                threeControls.dampingFactor = 0.08;
             }
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+            threeScene.add(ambientLight);
+
+            const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.85);
+            dirLight1.position.set(100, 150, 100);
+            threeScene.add(dirLight1);
+
+            const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 0.45);
+            dirLight2.position.set(-100, -100, -100);
+            threeScene.add(dirLight2);
+
+            const binL = plan.bin.l;
+            const binW = plan.bin.w;
+            const binH = plan.bin.h;
+
+            const boxGeo = new THREE.BoxGeometry(binL, binH, binW);
+            const boxEdges = new THREE.EdgesGeometry(boxGeo);
+            const lineMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 });
+            const wireframe = new THREE.LineSegments(boxEdges, lineMat);
+            threeScene.add(wireframe);
+
+            const boxMat = new THREE.MeshPhongMaterial({
+                color: 0x0284c7,
+                transparent: true,
+                opacity: 0.12,
+                side: THREE.DoubleSide
+            });
+            const boxMesh = new THREE.Mesh(boxGeo, boxMat);
+            threeScene.add(boxMesh);
+
+            const [iL, iW, iH] = plan.orientation;
+            const nx = Math.max(1, plan.grid.nx);
+            const ny = Math.max(1, plan.grid.ny);
+            const maxLayersZ = Math.max(1, plan.grid.nz);
+            const targetItems = plan.itemsPerBox;
+
+            const itemsGroup = new THREE.Group();
+
+            const itemGeo = new THREE.BoxGeometry(Math.max(0.5, iL - 0.2), Math.max(0.5, iH - 0.2), Math.max(0.5, iW - 0.2));
+            const itemMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.35, metalness: 0.1 });
+            const itemEdges = new THREE.EdgesGeometry(itemGeo);
+            const itemEdgeMat = new THREE.LineBasicMaterial({ color: 0x064e3b });
+
+            const startX = -binL / 2 + iL / 2;
+            const startY = -binH / 2 + iH / 2;
+            const startZ = -binW / 2 + iW / 2;
+
+            let placed = 0;
+
+            for (let iz = 0; iz < maxLayersZ && placed < targetItems; iz++) {
+                for (let iy = 0; iy < ny && placed < targetItems; iy++) {
+                    for (let ix = 0; ix < nx && placed < targetItems; ix++) {
+                        const mesh = new THREE.Mesh(itemGeo, itemMat);
+                        mesh.position.set(startX + ix * iL, startY + iz * iH, startZ + iy * iW);
+                        mesh.add(new THREE.LineSegments(itemEdges, itemEdgeMat));
+                        itemsGroup.add(mesh);
+                        placed++;
+                    }
+                }
+            }
+
+            threeScene.add(itemsGroup);
+
+            const maxDim = Math.max(binL, binW, binH);
+            threeCamera.position.set(maxDim * 1.5, maxDim * 1.3, maxDim * 1.8);
+            threeCamera.lookAt(0, 0, 0);
+
+            if (threeControls) {
+                threeControls.target.set(0, 0, 0);
+                threeControls.update();
+            }
+
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+            function animate() {
+                animationFrameId = requestAnimationFrame(animate);
+                if (threeControls) threeControls.update();
+                itemsGroup.rotation.y += 0.003;
+                wireframe.rotation.y += 0.003;
+                boxMesh.rotation.y += 0.003;
+                threeRenderer.render(threeScene, threeCamera);
+            }
+            animate();
         }
-    }
-
-    // 2. Τοποθέτηση επιπλέον τεμαχίων στον ελεύθερο χώρο (Residual Space)
-    if (placed < targetItems) {
-        const extraGeo = new THREE.BoxGeometry(Math.max(0.5, iL - 0.3), Math.max(0.5, iW - 0.3), Math.max(0.5, iH - 0.3));
-        const extraEdges = new THREE.EdgesGeometry(extraGeo);
-        const extraEdgeMat = new THREE.LineBasicMaterial({ color: 0x065f46 });
-        const sideZ = binW / 2 - iH / 2;
-
-        while (placed < targetItems) {
-            const extraMesh = new THREE.Mesh(extraGeo, itemMat);
-            const extraIdx = placed - (nx * ny * nz);
-            const extraX = -binL / 2 + iL / 2 + (extraIdx % 2) * iL;
-            const extraY = -binH / 2 + iW / 2 + Math.floor(extraIdx / 2) * iW;
-
-            extraMesh.position.set(extraX, extraY, sideZ);
-            extraMesh.add(new THREE.LineSegments(extraEdges, extraEdgeMat));
-            itemsGroup.add(extraMesh);
-            placed++;
-        }
-    }
-
-    threeScene.add(itemsGroup);
-
-    const maxDim = Math.max(binL, binW, binH);
-    threeCamera.position.set(maxDim * 1.5, maxDim * 1.3, maxDim * 1.8);
-    threeCamera.lookAt(0, 0, 0);
-
-    if (threeControls) {
-        threeControls.target.set(0, 0, 0);
-        threeControls.update();
-    }
-
-    if (animationFrameId) cancelAnimationFrame(animationFrameId);
-
-    function animate() {
-        animationFrameId = requestAnimationFrame(animate);
-        if (threeControls) threeControls.update();
-        itemsGroup.rotation.y += 0.003;
-        wireframe.rotation.y += 0.003;
-        boxMesh.rotation.y += 0.003;
-        threeRenderer.render(threeScene, threeCamera);
-    }
-    animate();
-}
 
         function close3DModal() {
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
@@ -1526,7 +1395,6 @@ function init3DScene(plan) {
             }
         });
 
-        /* EXPORT DATA TO GOOGLE SHEETS (ONLY UPON MANUAL BUTTON CLICK) */
         function sendDataToSheet() {
             if (!currentCalculation) {
                 showToast("⚠️ Παρακαλώ πραγματοποιήστε πρώτα έναν υπολογισμό.");
@@ -1542,7 +1410,6 @@ function init3DScene(plan) {
                 btn.innerHTML = `<span>⏳</span> Αποστολή...`;
             }
 
-            // Construct clean packing text for Column K (no volumetric details)
             let groupTexts = currentCalculation.groups.map(g => {
                 let boxText = g.packingPlan.map(p => `${p.count}x ${p.bin.name} (${p.itemsPerBox}τμχ/${p.weightPerBox}kg)`).join(' + ');
                 return isSplitMode ? `[${g.name}]: ${boxText}` : boxText;
@@ -1578,7 +1445,7 @@ function init3DScene(plan) {
             });
         }
 
-function openThermalPrintModal() {
+        function openThermalPrintModal() {
             if (!currentCalculation) return;
 
             const modalContainer = document.getElementById('modalLabelContainer');
@@ -1593,9 +1460,7 @@ function openThermalPrintModal() {
                     for (let i = 0; i < plan.count; i++) {
                         const cleanBoxName = plan.bin.name.replace(/κούτα|κουτί/gi, 'Συσκευασία');
                         const labelHtml = `
-                            <div class="thermal-label-preview" style="width: 100mm; min-height: 62mm; box-sizing: border-box; background: #fff; color: #000; border: 2.5px solid #000; border-radius: 6px; padding: 4mm 5mm; display: flex; flex-direction: column; justify-content: space-between; margin: 0 auto 16px auto; overflow: hidden;">
-                                
-                                <!-- TOP BAR: BRAND & BOX NUMBER -->
+                            <div class="thermal-label-preview">
                                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 3px;">
                                     <div style="font-weight: 900; font-size: 13px; background: #000; color: #fff; padding: 2px 8px; border-radius: 3px; letter-spacing: 0.5px;">
                                         ATRION
@@ -1605,14 +1470,12 @@ function openThermalPrintModal() {
                                     </div>
                                 </div>
 
-                                <!-- PROJECT NAME (GIGANTIC & DOMINANT) -->
                                 <div style="padding: 10px 0; text-align: center; border-bottom: 2.5px solid #000; display: flex; align-items: center; justify-content: center;">
-                                    <span style="font-weight: 900; font-size: 32px; line-height: 1.05; text-transform: uppercase; letter-spacing: -0.5px; word-break: break-word;">
+                                    <span style="font-weight: 900; font-size: 30px; line-height: 1.05; text-transform: uppercase; letter-spacing: -0.5px; word-break: break-word;">
                                         ${currentCalculation.projectName}${groupNameTag}
                                     </span>
                                 </div>
 
-                                <!-- COMPACT BOXES: QUANTITY & WEIGHT -->
                                 <div style="display: flex; gap: 8px; margin: 5px 0;">
                                     <div style="flex: 1; border: 1.5px solid #000; border-radius: 4px; padding: 3px 6px; display: flex; align-items: center; justify-content: space-between;">
                                         <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #333;">ΠΟΣΟΤΗΤΑ:</span>
@@ -1624,7 +1487,6 @@ function openThermalPrintModal() {
                                     </div>
                                 </div>
 
-                                <!-- FOOTER: BOX TYPE & DATE -->
                                 <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 800; border-top: 1.5px solid #000; padding-top: 3px;">
                                     <div>📦 ${cleanBoxName}</div>
                                     <div style="font-size: 10px; font-weight: 700; color: #333;">📅 ${todayStr}</div>
@@ -1655,6 +1517,7 @@ function openThermalPrintModal() {
 
             const printSection = document.getElementById('printSection');
             printSection.innerHTML = '';
+            printSection.style.display = 'block';
 
             let labelIndex = 1;
             const todayStr = new Date().toLocaleDateString('el-GR');
@@ -1665,9 +1528,7 @@ function openThermalPrintModal() {
                     for (let i = 0; i < plan.count; i++) {
                         const cleanBoxName = plan.bin.name.replace(/κούτα|κουτί/gi, 'Συσκευασία');
                         const printHtml = `
-                            <div class="thermal-label-print" style="width: 100mm; height: 62mm; box-sizing: border-box; padding: 3.5mm 5mm; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; page-break-after: always; break-after: page;">
-                                
-                                <!-- TOP BAR: BRAND & BOX NUMBER -->
+                            <div class="thermal-label-print">
                                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 3px;">
                                     <div style="font-weight: 900; font-size: 13px; background: #000; color: #fff; padding: 2px 8px; border-radius: 3px; letter-spacing: 0.5px;">
                                         ATRION
@@ -1677,14 +1538,12 @@ function openThermalPrintModal() {
                                     </div>
                                 </div>
 
-                                <!-- PROJECT NAME: EXTRA LARGE -->
                                 <div style="padding: 6px 2px; text-align: center; border-bottom: 2px solid #000; display: flex; align-items: center; justify-content: center; min-height: 44px;">
                                     <span style="font-weight: 900; font-size: 28px; line-height: 1.1; text-transform: uppercase; letter-spacing: -0.5px; word-break: break-word;">
                                         ${currentCalculation.projectName}${groupNameTag}
                                     </span>
                                 </div>
 
-                                <!-- COMPACT BOXES: QUANTITY & WEIGHT -->
                                 <div style="display: flex; gap: 8px; margin: 4px 0;">
                                     <div style="flex: 1; border: 1.8px solid #000; border-radius: 4px; padding: 3px 6px; display: flex; align-items: center; justify-content: space-between;">
                                         <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #333;">ΠΟΣΟΤΗΤΑ:</span>
@@ -1696,7 +1555,6 @@ function openThermalPrintModal() {
                                     </div>
                                 </div>
 
-                                <!-- FOOTER: BOX TYPE & DATE -->
                                 <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 800; border-top: 1.5px solid #000; padding-top: 3px;">
                                     <div>📦 ${cleanBoxName}</div>
                                     <div style="font-size: 10px; font-weight: 700; color: #444;">📅 ${todayStr}</div>
@@ -1709,8 +1567,13 @@ function openThermalPrintModal() {
                 });
             });
 
-            window.print();
+            setTimeout(() => {
+                window.print();
+                printSection.style.display = 'none';
+                printSection.innerHTML = '';
+            }, 100);
         }
+
         function copyResultsToClipboard() {
             if (!currentCalculation) return;
 
