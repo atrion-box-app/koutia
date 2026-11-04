@@ -1514,20 +1514,17 @@
 
         function triggerThermalPrint() {
             if (!currentCalculation) return;
-
-            const printSection = document.getElementById('printSection');
-            printSection.innerHTML = '';
-            printSection.style.display = 'block';
-
+        
             let labelIndex = 1;
             const todayStr = new Date().toLocaleDateString('el-GR');
-
+            let labelsHtml = '';
+        
             currentCalculation.groups.forEach(group => {
                 const groupNameTag = isSplitMode ? ` - ${group.name}` : '';
                 group.packingPlan.forEach(plan => {
                     for (let i = 0; i < plan.count; i++) {
                         const cleanBoxName = plan.bin.name.replace(/κούτα|κουτί/gi, 'Συσκευασία');
-                        const printHtml = `
+                        labelsHtml += `
                             <div class="thermal-label-print">
                                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 3px;">
                                     <div style="font-weight: 900; font-size: 13px; background: #000; color: #fff; padding: 2px 8px; border-radius: 3px; letter-spacing: 0.5px;">
@@ -1537,13 +1534,13 @@
                                         ${labelIndex} / ${currentCalculation.totalBoxesCount}
                                     </div>
                                 </div>
-
+        
                                 <div style="padding: 6px 2px; text-align: center; border-bottom: 2px solid #000; display: flex; align-items: center; justify-content: center; min-height: 44px;">
-                                    <span style="font-weight: 900; font-size: 28px; line-height: 1.1; text-transform: uppercase; letter-spacing: -0.5px; word-break: break-word;">
+                                    <span style="font-weight: 900; font-size: 26px; line-height: 1.1; text-transform: uppercase; letter-spacing: -0.5px; word-break: break-word;">
                                         ${currentCalculation.projectName}${groupNameTag}
                                     </span>
                                 </div>
-
+        
                                 <div style="display: flex; gap: 8px; margin: 4px 0;">
                                     <div style="flex: 1; border: 1.8px solid #000; border-radius: 4px; padding: 3px 6px; display: flex; align-items: center; justify-content: space-between;">
                                         <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #333;">ΠΟΣΟΤΗΤΑ:</span>
@@ -1554,26 +1551,83 @@
                                         <span style="font-size: 20px; font-weight: 900;">${plan.weightPerBox} <span style="font-size: 11px; font-weight: 700;">kg</span></span>
                                     </div>
                                 </div>
-
+        
                                 <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 800; border-top: 1.5px solid #000; padding-top: 3px;">
                                     <div>📦 ${cleanBoxName}</div>
                                     <div style="font-size: 10px; font-weight: 700; color: #444;">📅 ${todayStr}</div>
                                 </div>
                             </div>
                         `;
-                        printSection.innerHTML += printHtml;
                         labelIndex++;
                     }
                 });
             });
-
+        
+            // Δημιουργία κρυφού iframe
+            let printFrame = document.getElementById('printIframe');
+            if (printFrame) {
+                printFrame.remove();
+            }
+            printFrame = document.createElement('iframe');
+            printFrame.id = 'printIframe';
+            printFrame.style.position = 'fixed';
+            printFrame.style.right = '0';
+            printFrame.style.bottom = '0';
+            printFrame.style.width = '0';
+            printFrame.style.height = '0';
+            printFrame.style.border = '0';
+            document.body.appendChild(printFrame);
+        
+            const frameDoc = printFrame.contentWindow || printFrame.contentDocument.document || printFrame.contentDocument;
+            frameDoc.document.open();
+            frameDoc.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Εκτύπωση Ετικετών</title>
+                    <style>
+                        @page {
+                            size: 100mm 62mm landscape;
+                            margin: 0;
+                        }
+                        * {
+                            box-sizing: border-box;
+                            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+                        }
+                        html, body {
+                            margin: 0 !important;
+                            padding: 0 !important;
+                            background: #ffffff !important;
+                            width: 100mm;
+                        }
+                        .thermal-label-print {
+                            width: 100mm;
+                            height: 62mm;
+                            padding: 4mm 6mm;
+                            display: flex;
+                            flex-direction: column;
+                            justify-content: space-between;
+                            page-break-after: always;
+                            break-after: page;
+                            background: #fff;
+                            color: #000;
+                            overflow: hidden;
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${labelsHtml}
+                </body>
+                </html>
+            `);
+            frameDoc.document.close();
+        
+            // Εκτέλεση εκτύπωσης μόλις φορτωθεί το περιεχόμενο
             setTimeout(() => {
-                window.print();
-                printSection.style.display = 'none';
-                printSection.innerHTML = '';
-            }, 100);
+                printFrame.contentWindow.focus();
+                printFrame.contentWindow.print();
+            }, 250);
         }
-
         function copyResultsToClipboard() {
             if (!currentCalculation) return;
 
