@@ -1512,13 +1512,13 @@
             }
         }
 
-        function triggerThermalPrint() {
+function triggerThermalPrint() {
             if (!currentCalculation) return;
-        
+
             let labelIndex = 1;
             const todayStr = new Date().toLocaleDateString('el-GR');
             let labelsHtml = '';
-        
+
             currentCalculation.groups.forEach(group => {
                 const groupNameTag = isSplitMode ? ` - ${group.name}` : '';
                 group.packingPlan.forEach(plan => {
@@ -1534,13 +1534,13 @@
                                         ${labelIndex} / ${currentCalculation.totalBoxesCount}
                                     </div>
                                 </div>
-        
+
                                 <div style="padding: 6px 2px; text-align: center; border-bottom: 2px solid #000; display: flex; align-items: center; justify-content: center; min-height: 44px;">
                                     <span style="font-weight: 900; font-size: 26px; line-height: 1.1; text-transform: uppercase; letter-spacing: -0.5px; word-break: break-word;">
                                         ${currentCalculation.projectName}${groupNameTag}
                                     </span>
                                 </div>
-        
+
                                 <div style="display: flex; gap: 8px; margin: 4px 0;">
                                     <div style="flex: 1; border: 1.8px solid #000; border-radius: 4px; padding: 3px 6px; display: flex; align-items: center; justify-content: space-between;">
                                         <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #333;">ΠΟΣΟΤΗΤΑ:</span>
@@ -1551,7 +1551,7 @@
                                         <span style="font-size: 20px; font-weight: 900;">${plan.weightPerBox} <span style="font-size: 11px; font-weight: 700;">kg</span></span>
                                     </div>
                                 </div>
-        
+
                                 <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 800; border-top: 1.5px solid #000; padding-top: 3px;">
                                     <div>📦 ${cleanBoxName}</div>
                                     <div style="font-size: 10px; font-weight: 700; color: #444;">📅 ${todayStr}</div>
@@ -1562,8 +1562,7 @@
                     }
                 });
             });
-        
-            // Δημιουργία κρυφού iframe
+
             let printFrame = document.getElementById('printIframe');
             if (printFrame) {
                 printFrame.remove();
@@ -1577,7 +1576,7 @@
             printFrame.style.height = '0';
             printFrame.style.border = '0';
             document.body.appendChild(printFrame);
-        
+
             const frameDoc = printFrame.contentWindow || printFrame.contentDocument.document || printFrame.contentDocument;
             frameDoc.document.open();
             frameDoc.document.write(`
@@ -1621,12 +1620,11 @@
                 </html>
             `);
             frameDoc.document.close();
-        
-            // Εκτέλεση εκτύπωσης μόλις φορτωθεί το περιεχόμενο
+
             setTimeout(() => {
                 printFrame.contentWindow.focus();
                 printFrame.contentWindow.print();
-            }, 250);
+            }, 300);
         }
         function copyResultsToClipboard() {
             if (!currentCalculation) return;
