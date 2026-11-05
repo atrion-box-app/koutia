@@ -756,114 +756,116 @@
             }
         }
 
-        function calculateFitPerBox(itemL, itemW, itemH, binL, binW, binH) {
-                    const orientations = [
-                        [itemL, itemW, itemH], [itemL, itemH, itemW],
-                        [itemW, itemL, itemH], [itemW, itemH, itemL],
-                        [itemH, itemL, itemW], [itemH, itemW, itemL]
-                    ];
-        
-                    let bestResult = {
-                        maxCount: 0,
-                        bestOrientation: orientations[0],
-                        bestGrid: { nx: 0, ny: 0, nz: 0 },
-                        blocks: []
-                    };
-        
-                    function getBestFitInVolume(volL, volW, volH, offsetX, offsetY, offsetZ) {
-                        if (volL <= 0 || volW <= 0 || volH <= 0) return { count: 0, items: [] };
-                        let best = { count: 0, items: [] };
-        
-                        orientations.forEach(([dL, dW, dH]) => {
-                            const cx = Math.floor(volL / dL);
-                            const cy = Math.floor(volW / dW);
-                            const cz = Math.floor(volH / dH);
-                            const total = cx * cy * cz;
-        
-                            if (total > best.count) {
-                                let items = [];
-                                for (let iz = 0; iz < cz; iz++) {
-                                    for (let iy = 0; iy < cy; iy++) {
-                                        for (let ix = 0; ix < cx; ix++) {
-                                            items.push({
-                                                x: offsetX + ix * dL,
-                                                y: offsetY + iy * dW,
-                                                z: offsetZ + iz * dH,
-                                                dim: [dL, dW, dH]
-                                            });
-                                        }
+function calculateFitPerBox(itemL, itemW, itemH, binL, binW, binH) {
+            const orientations = [
+                [itemL, itemW, itemH], [itemL, itemH, itemW],
+                [itemW, itemL, itemH], [itemW, itemH, itemL],
+                [itemH, itemL, itemW], [itemH, itemW, itemL]
+            ];
+
+            let bestResult = {
+                maxCount: 0,
+                bestOrientation: orientations[0],
+                bestGrid: { nx: 0, ny: 0, nz: 0 },
+                blocks: []
+            };
+
+            function packBlock(subL, subW, subH, ox, oy, oz) {
+                if (subL <= 0 || subW <= 0 || subH <= 0) return { count: 0, items: [] };
+                let maxSub = 0;
+                let bestSubItems = [];
+
+                orientations.forEach(([dL, dW, dH]) => {
+                    if (subL >= dL && subW >= dW && subH >= dH) {
+                        const nx = Math.floor(subL / dL);
+                        const ny = Math.floor(subW / dW);
+                        const nz = Math.floor(subH / dH);
+                        const count = nx * ny * nz;
+
+                        if (count > maxSub) {
+                            maxSub = count;
+                            let items = [];
+                            for (let iz = 0; iz < nz; iz++) {
+                                for (let iy = 0; iy < ny; iy++) {
+                                    for (let ix = 0; ix < nx; ix++) {
+                                        items.push({
+                                            x: ox + ix * dL,
+                                            y: oy + iy * dW,
+                                            z: oz + iz * dH,
+                                            dim: [dL, dW, dH]
+                                        });
                                     }
                                 }
-                                best = { count: total, items };
                             }
-                        });
-                        return best;
+                            bestSubItems = items;
+                        }
                     }
-        
-                    orientations.forEach(([iL, iW, iH]) => {
-                        if (iL <= 0 || iW <= 0 || iH <= 0 || binL < iL || binW < iW || binH < iH) return;
-        
-                        const nx = Math.floor(binL / iL);
-                        const ny = Math.floor(binW / iW);
-                        const nz = Math.floor(binH / iH);
-                        const primaryCount = nx * ny * nz;
-        
-                        if (primaryCount === 0) return;
-        
-                        let primaryItems = [];
-                        for (let iz = 0; iz < nz; iz++) {
-                            for (let iy = 0; iy < ny; iy++) {
-                                for (let ix = 0; ix < nx; ix++) {
-                                    primaryItems.push({
-                                        x: ix * iL,
-                                        y: iy * iW,
-                                        z: iz * iH,
-                                        dim: [iL, iW, iH]
-                                    });
-                                }
-                            }
+                });
+                return { count: maxSub, items: bestSubItems };
+            }
+
+            orientations.forEach(([iL, iW, iH]) => {
+                if (binL < iL || binW < iW || binH < iH) return;
+
+                const nx = Math.floor(binL / iL);
+                const ny = Math.floor(binW / iW);
+                const nz = Math.floor(binH / iH);
+                const primaryCount = nx * ny * nz;
+                if (primaryCount === 0) return;
+
+                let primaryItems = [];
+                for (let iz = 0; iz < nz; iz++) {
+                    for (let iy = 0; iy < ny; iy++) {
+                        for (let ix = 0; ix < nx; ix++) {
+                            primaryItems.push({
+                                x: ix * iL,
+                                y: iy * iW,
+                                z: iz * iH,
+                                dim: [iL, iW, iH]
+                            });
                         }
-        
-                        const usedL = nx * iL;
-                        const usedW = ny * iW;
-                        const usedH = nz * iH;
-        
-                        // Υπολειπόμενες ζώνες
-                        // Σχέδιο A: Χώρισμα κατά μήκος πρώτα
-                        const resA1 = getBestFitInVolume(binL - usedL, binW, binH, usedL, 0, 0);
-                        const resA2 = getBestFitInVolume(usedL, binW - usedW, binH, 0, usedW, 0);
-                        const resA3 = getBestFitInVolume(usedL, usedW, binH - usedH, 0, 0, usedH);
-                        const totalA = primaryCount + resA1.count + resA2.count + resA3.count;
-        
-                        // Σχέδιο B: Χώρισμα κατά πλάτος πρώτα
-                        const resB1 = getBestFitInVolume(binL, binW - usedW, binH, 0, usedW, 0);
-                        const resB2 = getBestFitInVolume(binL - usedL, usedW, binH, usedL, 0, 0);
-                        const resB3 = getBestFitInVolume(usedL, usedW, binH - usedH, 0, 0, usedH);
-                        const totalB = primaryCount + resB1.count + resB2.count + resB3.count;
-        
-                        let chosenCount = primaryCount;
-                        let chosenItems = primaryItems;
-        
-                        if (totalA >= totalB && totalA > primaryCount) {
-                            chosenCount = totalA;
-                            chosenItems = [...primaryItems, ...resA1.items, ...resA2.items, ...resA3.items];
-                        } else if (totalB > totalA && totalB > primaryCount) {
-                            chosenCount = totalB;
-                            chosenItems = [...primaryItems, ...resB1.items, ...resB2.items, ...resB3.items];
-                        }
-        
-                        if (chosenCount > bestResult.maxCount) {
-                            bestResult = {
-                                maxCount: chosenCount,
-                                bestOrientation: [iL, iW, iH],
-                                bestGrid: { nx, ny, nz },
-                                blocks: chosenItems
-                            };
-                        }
-                    });
-        
-                    return bestResult;
+                    }
                 }
+
+                const uL = nx * iL;
+                const uW = ny * iW;
+                const uH = nz * iH;
+
+                // Δοκιμή 1: Υποδιαίρεση κατά μήκος (X cut)
+                const xCut1 = packBlock(binL - uL, binW, binH, uL, 0, 0);
+                const xCut2 = packBlock(uL, binW - uW, binH, 0, uW, 0);
+                const xCut3 = packBlock(uL, uW, binH - uH, 0, 0, uH);
+                const totalX = primaryCount + xCut1.count + xCut2.count + xCut3.count;
+
+                // Δοκιμή 2: Υποδιαίρεση κατά πλάτος (Y cut)
+                const yCut1 = packBlock(binL, binW - uW, binH, 0, uW, 0);
+                const yCut2 = packBlock(binL - uL, uW, binH, uL, 0, 0);
+                const yCut3 = packBlock(uL, uW, binH - uH, 0, 0, uH);
+                const totalY = primaryCount + yCut1.count + yCut2.count + yCut3.count;
+
+                let currentTotal = primaryCount;
+                let currentItems = primaryItems;
+
+                if (totalY >= totalX && totalY > currentTotal) {
+                    currentTotal = totalY;
+                    currentItems = [...primaryItems, ...yCut1.items, ...yCut2.items, ...yCut3.items];
+                } else if (totalX > totalY && totalX > currentTotal) {
+                    currentTotal = totalX;
+                    currentItems = [...primaryItems, ...xCut1.items, ...xCut2.items, ...xCut3.items];
+                }
+
+                if (currentTotal > bestResult.maxCount) {
+                    bestResult = {
+                        maxCount: currentTotal,
+                        bestOrientation: [iL, iW, iH],
+                        bestGrid: { nx, ny, nz },
+                        blocks: currentItems
+                    };
+                }
+            });
+
+            return bestResult;
+        }
 
         function evaluateCandidateBoxes(activeBinsList, itemL, itemW, itemH, itemWeight, maxWeightLimit, volFactor, boxMargin) {
             return activeBinsList.map(bin => {
