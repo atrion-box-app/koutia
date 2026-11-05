@@ -757,36 +757,113 @@
         }
 
         function calculateFitPerBox(itemL, itemW, itemH, binL, binW, binH) {
-            const orientations = [
-                [itemL, itemW, itemH], [itemL, itemH, itemW],
-                [itemW, itemL, itemH], [itemW, itemH, itemL],
-                [itemH, itemL, itemW], [itemH, itemW, itemL]
-            ];
-
-            let maxTotalCount = 0;
-            let bestOrientation = orientations[0];
-            let bestGrid = { nx: 0, ny: 0, nz: 0 };
-
-            orientations.forEach(([iL, iW, iH]) => {
-                if (iL <= 0 || iW <= 0 || iH <= 0 || binL < iL || binW < iW || binH < iH) return;
-                const nx = Math.floor(binL / iL);
-                const ny = Math.floor(binW / iW);
-                const nz = Math.floor(binH / iH);
-                const total = nx * ny * nz;
-
-                if (total > maxTotalCount) {
-                    maxTotalCount = total;
-                    bestOrientation = [iL, iW, iH];
-                    bestGrid = { nx, ny, nz };
+                    const orientations = [
+                        [itemL, itemW, itemH], [itemL, itemH, itemW],
+                        [itemW, itemL, itemH], [itemW, itemH, itemL],
+                        [itemH, itemL, itemW], [itemH, itemW, itemL]
+                    ];
+        
+                    let bestResult = {
+                        maxCount: 0,
+                        bestOrientation: orientations[0],
+                        bestGrid: { nx: 0, ny: 0, nz: 0 },
+                        blocks: []
+                    };
+        
+                    function getBestFitInVolume(volL, volW, volH, offsetX, offsetY, offsetZ) {
+                        if (volL <= 0 || volW <= 0 || volH <= 0) return { count: 0, items: [] };
+                        let best = { count: 0, items: [] };
+        
+                        orientations.forEach(([dL, dW, dH]) => {
+                            const cx = Math.floor(volL / dL);
+                            const cy = Math.floor(volW / dW);
+                            const cz = Math.floor(volH / dH);
+                            const total = cx * cy * cz;
+        
+                            if (total > best.count) {
+                                let items = [];
+                                for (let iz = 0; iz < cz; iz++) {
+                                    for (let iy = 0; iy < cy; iy++) {
+                                        for (let ix = 0; ix < cx; ix++) {
+                                            items.push({
+                                                x: offsetX + ix * dL,
+                                                y: offsetY + iy * dW,
+                                                z: offsetZ + iz * dH,
+                                                dim: [dL, dW, dH]
+                                            });
+                                        }
+                                    }
+                                }
+                                best = { count: total, items };
+                            }
+                        });
+                        return best;
+                    }
+        
+                    orientations.forEach(([iL, iW, iH]) => {
+                        if (iL <= 0 || iW <= 0 || iH <= 0 || binL < iL || binW < iW || binH < iH) return;
+        
+                        const nx = Math.floor(binL / iL);
+                        const ny = Math.floor(binW / iW);
+                        const nz = Math.floor(binH / iH);
+                        const primaryCount = nx * ny * nz;
+        
+                        if (primaryCount === 0) return;
+        
+                        let primaryItems = [];
+                        for (let iz = 0; iz < nz; iz++) {
+                            for (let iy = 0; iy < ny; iy++) {
+                                for (let ix = 0; ix < nx; ix++) {
+                                    primaryItems.push({
+                                        x: ix * iL,
+                                        y: iy * iW,
+                                        z: iz * iH,
+                                        dim: [iL, iW, iH]
+                                    });
+                                }
+                            }
+                        }
+        
+                        const usedL = nx * iL;
+                        const usedW = ny * iW;
+                        const usedH = nz * iH;
+        
+                        // Υπολειπόμενες ζώνες
+                        // Σχέδιο A: Χώρισμα κατά μήκος πρώτα
+                        const resA1 = getBestFitInVolume(binL - usedL, binW, binH, usedL, 0, 0);
+                        const resA2 = getBestFitInVolume(usedL, binW - usedW, binH, 0, usedW, 0);
+                        const resA3 = getBestFitInVolume(usedL, usedW, binH - usedH, 0, 0, usedH);
+                        const totalA = primaryCount + resA1.count + resA2.count + resA3.count;
+        
+                        // Σχέδιο B: Χώρισμα κατά πλάτος πρώτα
+                        const resB1 = getBestFitInVolume(binL, binW - usedW, binH, 0, usedW, 0);
+                        const resB2 = getBestFitInVolume(binL - usedL, usedW, binH, usedL, 0, 0);
+                        const resB3 = getBestFitInVolume(usedL, usedW, binH - usedH, 0, 0, usedH);
+                        const totalB = primaryCount + resB1.count + resB2.count + resB3.count;
+        
+                        let chosenCount = primaryCount;
+                        let chosenItems = primaryItems;
+        
+                        if (totalA >= totalB && totalA > primaryCount) {
+                            chosenCount = totalA;
+                            chosenItems = [...primaryItems, ...resA1.items, ...resA2.items, ...resA3.items];
+                        } else if (totalB > totalA && totalB > primaryCount) {
+                            chosenCount = totalB;
+                            chosenItems = [...primaryItems, ...resB1.items, ...resB2.items, ...resB3.items];
+                        }
+        
+                        if (chosenCount > bestResult.maxCount) {
+                            bestResult = {
+                                maxCount: chosenCount,
+                                bestOrientation: [iL, iW, iH],
+                                bestGrid: { nx, ny, nz },
+                                blocks: chosenItems
+                            };
+                        }
+                    });
+        
+                    return bestResult;
                 }
-            });
-
-            return { 
-                maxCount: maxTotalCount, 
-                bestOrientation, 
-                bestGrid 
-            };
-        }
 
         function evaluateCandidateBoxes(activeBinsList, itemL, itemW, itemH, itemWeight, maxWeightLimit, volFactor, boxMargin) {
             return activeBinsList.map(bin => {
@@ -809,6 +886,7 @@
                     volWeight,
                     orientation: fitRes.bestOrientation,
                     grid: fitRes.bestGrid,
+                    blocks: fitRes.blocks,
                     effectiveBinDimensions: { l: effectiveBinL, w: effectiveBinW, h: effectiveBinH }
                 };
             }).filter(item => item.fitPerBox > 0);
@@ -842,6 +920,7 @@
                         maxVolQty: chosenBox.maxVolQty,
                         orientation: chosenBox.orientation,
                         grid: chosenBox.grid,
+                        blocks: chosenBox.blocks,
                         totalItems: itemsForThisBox,
                         weightPerBox: (itemsForThisBox * itemWeight).toFixed(2),
                         volWeightPerBox: chosenBox.volWeight.toFixed(2),
@@ -902,6 +981,7 @@
                         maxVolQty: bestChoice.maxVolQty,
                         orientation: bestChoice.orientation,
                         grid: bestChoice.grid,
+                        blocks: bestChoice.blocks,
                         totalItems: fullBoxesCount * bestChoice.itemsToPut,
                         weightPerBox: (bestChoice.itemsToPut * itemWeight).toFixed(2),
                         volWeightPerBox: bestChoice.volWeight.toFixed(2),
@@ -926,6 +1006,7 @@
                         maxVolQty: remainderChoice.maxVolQty,
                         orientation: remainderChoice.orientation,
                         grid: remainderChoice.grid,
+                        blocks: remainderChoice.blocks,
                         totalItems: remaining,
                         weightPerBox: (remaining * itemWeight).toFixed(2),
                         volWeightPerBox: remainderChoice.volWeight.toFixed(2),
@@ -1272,47 +1353,48 @@
         function init3DScene(plan) {
             const container = document.getElementById('threeCanvasContainer');
             container.innerHTML = '';
-
+        
             const width = container.clientWidth || 500;
             const height = container.clientHeight || 320;
-
+        
             threeScene = new THREE.Scene();
             threeScene.background = new THREE.Color(0x0b132b);
-
+        
             threeCamera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-
+        
             threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             threeRenderer.setSize(width, height);
             threeRenderer.setPixelRatio(window.devicePixelRatio);
             container.appendChild(threeRenderer.domElement);
-
+        
             if (window.THREE.OrbitControls) {
                 threeControls = new THREE.OrbitControls(threeCamera, threeRenderer.domElement);
                 threeControls.enableDamping = true;
                 threeControls.dampingFactor = 0.08;
             }
-
+        
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
             threeScene.add(ambientLight);
-
+        
             const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.85);
             dirLight1.position.set(100, 150, 100);
             threeScene.add(dirLight1);
-
+        
             const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 0.45);
             dirLight2.position.set(-100, -100, -100);
             threeScene.add(dirLight2);
-
+        
             const binL = plan.bin.l;
             const binW = plan.bin.w;
             const binH = plan.bin.h;
-
+        
+            // Εξωτερικό περίβλημα χαρτοκιβωτίου
             const boxGeo = new THREE.BoxGeometry(binL, binH, binW);
             const boxEdges = new THREE.EdgesGeometry(boxGeo);
             const lineMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 });
             const wireframe = new THREE.LineSegments(boxEdges, lineMat);
             threeScene.add(wireframe);
-
+        
             const boxMat = new THREE.MeshPhongMaterial({
                 color: 0x0284c7,
                 transparent: true,
@@ -1321,51 +1403,50 @@
             });
             const boxMesh = new THREE.Mesh(boxGeo, boxMat);
             threeScene.add(boxMesh);
-
-            const [iL, iW, iH] = plan.orientation;
-            const nx = Math.max(1, plan.grid.nx);
-            const ny = Math.max(1, plan.grid.ny);
-            const maxLayersZ = Math.max(1, plan.grid.nz);
-            const targetItems = plan.itemsPerBox;
-
+        
             const itemsGroup = new THREE.Group();
-
-            const itemGeo = new THREE.BoxGeometry(Math.max(0.5, iL - 0.2), Math.max(0.5, iH - 0.2), Math.max(0.5, iW - 0.2));
-            const itemMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.35, metalness: 0.1 });
-            const itemEdges = new THREE.EdgesGeometry(itemGeo);
             const itemEdgeMat = new THREE.LineBasicMaterial({ color: 0x064e3b });
-
-            const startX = -binL / 2 + iL / 2;
-            const startY = -binH / 2 + iH / 2;
-            const startZ = -binW / 2 + iW / 2;
-
-            let placed = 0;
-
-            for (let iz = 0; iz < maxLayersZ && placed < targetItems; iz++) {
-                for (let iy = 0; iy < ny && placed < targetItems; iy++) {
-                    for (let ix = 0; ix < nx && placed < targetItems; ix++) {
-                        const mesh = new THREE.Mesh(itemGeo, itemMat);
-                        mesh.position.set(startX + ix * iL, startY + iz * iH, startZ + iy * iW);
-                        mesh.add(new THREE.LineSegments(itemEdges, itemEdgeMat));
-                        itemsGroup.add(mesh);
-                        placed++;
-                    }
-                }
-            }
-
+            const itemMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.35, metalness: 0.1 });
+            const residualMat = new THREE.MeshStandardMaterial({ color: 0x06b6d4, roughness: 0.35, metalness: 0.1 }); // Γαλάζιο για τα πλαϊνά/συμπληρωματικά
+        
+            const startX = -binL / 2;
+            const startY = -binH / 2;
+            const startZ = -binW / 2;
+        
+            const itemsToRender = (plan.blocks && plan.blocks.length > 0) ? plan.blocks.slice(0, plan.itemsPerBox) : [];
+        
+            itemsToRender.forEach((item, index) => {
+                const [iL, iW, iH] = item.dim;
+                const itemGeo = new THREE.BoxGeometry(Math.max(0.5, iL - 0.2), Math.max(0.5, iH - 0.2), Math.max(0.5, iW - 0.2));
+                const itemEdges = new THREE.EdgesGeometry(itemGeo);
+                
+                // Πράσινο για το βασικό πλέγμα, γαλάζιο για τα επιπλέον κουτιά
+                const currentMat = (index < plan.grid.nx * plan.grid.ny * plan.grid.nz) ? itemMat : residualMat;
+                const mesh = new THREE.Mesh(itemGeo, currentMat);
+        
+                mesh.position.set(
+                    startX + item.x + iL / 2,
+                    startY + item.z + iH / 2,
+                    startZ + item.y + iW / 2
+                );
+        
+                mesh.add(new THREE.LineSegments(itemEdges, itemEdgeMat));
+                itemsGroup.add(mesh);
+            });
+        
             threeScene.add(itemsGroup);
-
+        
             const maxDim = Math.max(binL, binW, binH);
             threeCamera.position.set(maxDim * 1.5, maxDim * 1.3, maxDim * 1.8);
             threeCamera.lookAt(0, 0, 0);
-
+        
             if (threeControls) {
                 threeControls.target.set(0, 0, 0);
                 threeControls.update();
             }
-
+        
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
-
+        
             function animate() {
                 animationFrameId = requestAnimationFrame(animate);
                 if (threeControls) threeControls.update();
