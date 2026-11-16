@@ -405,14 +405,20 @@
     <!-- PRINT PREVIEW MODAL -->
     <div id="printModal" style="display: none;" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
         <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[90vh] flex flex-col overflow-hidden">
-            <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+<div class="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50">
                 <div>
                     <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
                         <span>🏷️</span> Προεπισκόπηση Ετικετών Θερμικού Εκτυπωτή
                     </h3>
-                    <p class="text-[11px] text-slate-500">Ετικέτες Brother (62mm x 100mm)</p>
+                    <p class="text-[11px] text-slate-500">Επιλέξτε το μέγεθος ρολού που έχετε τοποθετήσει στον Brother QL-810W</p>
                 </div>
-                <button type="button" onclick="closeThermalPrintModal()" class="text-slate-400 hover:text-slate-700 p-2 text-2xl font-black leading-none cursor-pointer">&times;</button>
+                <div class="flex items-center gap-2">
+                    <select id="labelSizeSelect" onchange="openThermalPrintModal()" class="text-xs font-bold p-2 border border-slate-300 rounded-lg bg-white text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <option value="100x62">62mm × 100mm (Μεγάλες - DK-11202)</option>
+                        <option value="62x29" selected>62mm × 29mm (Μικρές - DK-11209)</option>
+                    </select>
+                    <button type="button" onclick="closeThermalPrintModal()" class="text-slate-400 hover:text-slate-700 p-2 text-2xl font-black leading-none cursor-pointer">&times;</button>
+                </div>
             </div>
             
             <div id="modalLabelContainer" class="p-6 overflow-y-auto bg-slate-100 flex-1">
@@ -1512,8 +1518,75 @@
             });
         }
 
+function generateSingleLabelHtml(plan, labelIndex, totalBoxes, projectName, groupNameTag, todayStr, isSmall, isPrint) {
+            const cleanBoxName = plan.bin.name.replace(/κούτα|κουτί/gi, 'Συσκευασία');
+            const wrapperClass = isPrint ? 'thermal-label-print' : 'thermal-label-preview';
+
+            if (isSmall) {
+                // ΔΙΑΤΑΞΗ ΓΙΑ ΜΙΚΡΗ ΕΤΙΚΕΤΑ: 62mm Πλάτος x 29mm Ύψος (DK-11209)
+                const previewStyle = isPrint ? '' : 'width: 62mm; height: 29mm; box-sizing: border-box; background: #fff; color: #000; border: 2px solid #000; border-radius: 4px; padding: 2mm 3mm; display: flex; flex-direction: column; justify-content: space-between; margin: 0 auto 12px auto; overflow: hidden;';
+                return `
+                    <div class="${wrapperClass}" style="${previewStyle}">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #000; padding-bottom: 1px;">
+                            <span style="font-weight: 900; font-size: 8px; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">ATRION</span>
+                            <span style="font-weight: 900; font-size: 11px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">
+                                ${projectName}${groupNameTag}
+                            </span>
+                            <span style="font-weight: 900; font-size: 9px; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">
+                                ${labelIndex}/${totalBoxes}
+                            </span>
+                        </div>
+                        <div style="display: flex; justify-content: space-around; align-items: center; margin: 2px 0;">
+                            <div style="font-size: 13px; font-weight: 900;">${plan.itemsPerBox} <span style="font-size: 9px; font-weight: 700;">τμχ</span></div>
+                            <div style="width: 1.5px; height: 14px; background: #000;"></div>
+                            <div style="font-size: 13px; font-weight: 900;">${plan.weightPerBox} <span style="font-size: 9px; font-weight: 700;">kg</span></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 7.5px; font-weight: 800; border-top: 1px solid #000; padding-top: 1px;">
+                            <span>📦 ${cleanBoxName}</span>
+                            <span>${todayStr}</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // ΔΙΑΤΑΞΗ ΓΙΑ ΜΕΓΑΛΗ ΕΤΙΚΕΤΑ: 100mm Πλάτος x 62mm Ύψος (DK-11202)
+                const previewStyle = isPrint ? '' : 'width: 100mm; height: 62mm; box-sizing: border-box; background: #fff; color: #000; border: 2px solid #000; border-radius: 6px; padding: 4mm 6mm; display: flex; flex-direction: column; justify-content: space-between; margin: 0 auto 16px auto; overflow: hidden;';
+                return `
+                    <div class="${wrapperClass}" style="${previewStyle}">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 3px;">
+                            <div style="font-weight: 900; font-size: 13px; background: #000; color: #fff; padding: 2px 8px; border-radius: 3px; letter-spacing: 0.5px;">ATRION</div>
+                            <div style="font-weight: 900; font-size: 15px; background: #000; color: #fff; padding: 2px 8px; border-radius: 3px;">
+                                ${labelIndex} / ${totalBoxes}
+                            </div>
+                        </div>
+                        <div style="padding: 8px 0; text-align: center; border-bottom: 2.5px solid #000; display: flex; align-items: center; justify-content: center;">
+                            <span style="font-weight: 900; font-size: 28px; line-height: 1.05; text-transform: uppercase; letter-spacing: -0.5px; word-break: break-word;">
+                                ${projectName}${groupNameTag}
+                            </span>
+                        </div>
+                        <div style="display: flex; gap: 8px; margin: 4px 0;">
+                            <div style="flex: 1; border: 1.5px solid #000; border-radius: 4px; padding: 3px 6px; display: flex; align-items: center; justify-content: space-between;">
+                                <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #333;">ΠΟΣΟΤΗΤΑ:</span>
+                                <span style="font-size: 19px; font-weight: 900;">${plan.itemsPerBox} <span style="font-size: 11px; font-weight: 700;">τμχ</span></span>
+                            </div>
+                            <div style="flex: 1; border: 1.5px solid #000; border-radius: 4px; padding: 3px 6px; display: flex; align-items: center; justify-content: space-between;">
+                                <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #333;">ΒΑΡΟΣ:</span>
+                                <span style="font-size: 19px; font-weight: 900;">${plan.weightPerBox} <span style="font-size: 11px; font-weight: 700;">kg</span></span>
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 800; border-top: 1.5px solid #000; padding-top: 3px;">
+                            <div>📦 ${cleanBoxName}</div>
+                            <div style="font-size: 10px; font-weight: 700; color: #333;">📅 ${todayStr}</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
         function openThermalPrintModal() {
             if (!currentCalculation) return;
+
+            const sizeVal = document.getElementById('labelSizeSelect').value;
+            const isSmall = (sizeVal === '62x29');
 
             const modalContainer = document.getElementById('modalLabelContainer');
             modalContainer.innerHTML = '';
@@ -1525,42 +1598,10 @@
                 const groupNameTag = isSplitMode ? ` - ${group.name}` : '';
                 group.packingPlan.forEach(plan => {
                     for (let i = 0; i < plan.count; i++) {
-                        const cleanBoxName = plan.bin.name.replace(/κούτα|κουτί/gi, 'Συσκευασία');
-                        const labelHtml = `
-                            <div class="thermal-label-preview">
-                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 3px;">
-                                    <div style="font-weight: 900; font-size: 13px; background: #000; color: #fff; padding: 2px 8px; border-radius: 3px; letter-spacing: 0.5px;">
-                                        ATRION
-                                    </div>
-                                    <div style="font-weight: 900; font-size: 15px; background: #000; color: #fff; padding: 2px 8px; border-radius: 3px;">
-                                        ${labelIndex} / ${currentCalculation.totalBoxesCount}
-                                    </div>
-                                </div>
-
-                                <div style="padding: 10px 0; text-align: center; border-bottom: 2.5px solid #000; display: flex; align-items: center; justify-content: center;">
-                                    <span style="font-weight: 900; font-size: 30px; line-height: 1.05; text-transform: uppercase; letter-spacing: -0.5px; word-break: break-word;">
-                                        ${currentCalculation.projectName}${groupNameTag}
-                                    </span>
-                                </div>
-
-                                <div style="display: flex; gap: 8px; margin: 5px 0;">
-                                    <div style="flex: 1; border: 1.5px solid #000; border-radius: 4px; padding: 3px 6px; display: flex; align-items: center; justify-content: space-between;">
-                                        <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #333;">ΠΟΣΟΤΗΤΑ:</span>
-                                        <span style="font-size: 19px; font-weight: 900;">${plan.itemsPerBox} <span style="font-size: 11px; font-weight: 700;">τμχ</span></span>
-                                    </div>
-                                    <div style="flex: 1; border: 1.5px solid #000; border-radius: 4px; padding: 3px 6px; display: flex; align-items: center; justify-content: space-between;">
-                                        <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #333;">ΒΑΡΟΣ:</span>
-                                        <span style="font-size: 19px; font-weight: 900;">${plan.weightPerBox} <span style="font-size: 11px; font-weight: 700;">kg</span></span>
-                                    </div>
-                                </div>
-
-                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 800; border-top: 1.5px solid #000; padding-top: 3px;">
-                                    <div>📦 ${cleanBoxName}</div>
-                                    <div style="font-size: 10px; font-weight: 700; color: #333;">📅 ${todayStr}</div>
-                                </div>
-                            </div>
-                        `;
-                        modalContainer.innerHTML += labelHtml;
+                        modalContainer.innerHTML += generateSingleLabelHtml(
+                            plan, labelIndex, currentCalculation.totalBoxesCount,
+                            currentCalculation.projectName, groupNameTag, todayStr, isSmall, false
+                        );
                         labelIndex++;
                     }
                 });
@@ -1582,6 +1623,13 @@
         function triggerThermalPrint() {
             if (!currentCalculation) return;
 
+            const sizeVal = document.getElementById('labelSizeSelect').value;
+            const isSmall = (sizeVal === '62x29');
+
+            const pageWidth = isSmall ? '62mm' : '100mm';
+            const pageHeight = isSmall ? '29mm' : '62mm';
+            const labelPadding = isSmall ? '2mm 3mm' : '4mm 6mm';
+
             let labelIndex = 1;
             const todayStr = new Date().toLocaleDateString('el-GR');
             let labelsHtml = '';
@@ -1590,58 +1638,21 @@
                 const groupNameTag = isSplitMode ? ` - ${group.name}` : '';
                 group.packingPlan.forEach(plan => {
                     for (let i = 0; i < plan.count; i++) {
-                        const cleanBoxName = plan.bin.name.replace(/κούτα|κουτί/gi, 'Συσκευασία');
-                        labelsHtml += `
-                            <div class="thermal-label-print">
-                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 3px;">
-                                    <div style="font-weight: 900; font-size: 13px; background: #000; color: #fff; padding: 2px 8px; border-radius: 3px; letter-spacing: 0.5px;">
-                                        ATRION
-                                    </div>
-                                    <div style="font-weight: 900; font-size: 14px; background: #000; color: #fff; padding: 2px 8px; border-radius: 3px;">
-                                        ${labelIndex} / ${currentCalculation.totalBoxesCount}
-                                    </div>
-                                </div>
-
-                                <div style="padding: 6px 2px; text-align: center; border-bottom: 2px solid #000; display: flex; align-items: center; justify-content: center; min-height: 44px;">
-                                    <span style="font-weight: 900; font-size: 26px; line-height: 1.1; text-transform: uppercase; letter-spacing: -0.5px; word-break: break-word;">
-                                        ${currentCalculation.projectName}${groupNameTag}
-                                    </span>
-                                </div>
-
-                                <div style="display: flex; gap: 8px; margin: 4px 0;">
-                                    <div style="flex: 1; border: 1.8px solid #000; border-radius: 4px; padding: 3px 6px; display: flex; align-items: center; justify-content: space-between;">
-                                        <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #333;">ΠΟΣΟΤΗΤΑ:</span>
-                                        <span style="font-size: 20px; font-weight: 900;">${plan.itemsPerBox} <span style="font-size: 11px; font-weight: 700;">τμχ</span></span>
-                                    </div>
-                                    <div style="flex: 1; border: 1.8px solid #000; border-radius: 4px; padding: 3px 6px; display: flex; align-items: center; justify-content: space-between;">
-                                        <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #333;">ΒΑΡΟΣ:</span>
-                                        <span style="font-size: 20px; font-weight: 900;">${plan.weightPerBox} <span style="font-size: 11px; font-weight: 700;">kg</span></span>
-                                    </div>
-                                </div>
-
-                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 800; border-top: 1.5px solid #000; padding-top: 3px;">
-                                    <div>📦 ${cleanBoxName}</div>
-                                    <div style="font-size: 10px; font-weight: 700; color: #444;">📅 ${todayStr}</div>
-                                </div>
-                            </div>
-                        `;
+                        labelsHtml += generateSingleLabelHtml(
+                            plan, labelIndex, currentCalculation.totalBoxesCount,
+                            currentCalculation.projectName, groupNameTag, todayStr, isSmall, true
+                        );
                         labelIndex++;
                     }
                 });
             });
 
             let printFrame = document.getElementById('printIframe');
-            if (printFrame) {
-                printFrame.remove();
-            }
+            if (printFrame) printFrame.remove();
+
             printFrame = document.createElement('iframe');
             printFrame.id = 'printIframe';
-            printFrame.style.position = 'fixed';
-            printFrame.style.right = '0';
-            printFrame.style.bottom = '0';
-            printFrame.style.width = '0';
-            printFrame.style.height = '0';
-            printFrame.style.border = '0';
+            printFrame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
             document.body.appendChild(printFrame);
 
             const frameDoc = printFrame.contentWindow || printFrame.contentDocument.document || printFrame.contentDocument;
@@ -1653,7 +1664,7 @@
                     <title>Εκτύπωση Ετικετών</title>
                     <style>
                         @page {
-                            size: 100mm 62mm landscape;
+                            size: ${pageWidth} ${pageHeight} landscape;
                             margin: 0;
                         }
                         * {
@@ -1666,12 +1677,12 @@
                             margin: 0 !important;
                             padding: 0 !important;
                             background: #ffffff !important;
-                            width: 100mm;
+                            width: ${pageWidth};
                         }
                         .thermal-label-print {
-                            width: 100mm;
-                            height: 62mm;
-                            padding: 4mm 6mm;
+                            width: ${pageWidth};
+                            height: ${pageHeight};
+                            padding: ${labelPadding};
                             display: flex;
                             flex-direction: column;
                             justify-content: space-between;
@@ -1683,9 +1694,7 @@
                         }
                     </style>
                 </head>
-                <body>
-                    ${labelsHtml}
-                </body>
+                <body>${labelsHtml}</body>
                 </html>
             `);
             frameDoc.document.close();
@@ -1695,7 +1704,6 @@
                 printFrame.contentWindow.print();
             }, 300);
         }
-
         function copyResultsToClipboard() {
             if (!currentCalculation) return;
 
