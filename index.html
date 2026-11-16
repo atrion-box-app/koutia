@@ -1523,25 +1523,25 @@ function generateSingleLabelHtml(plan, labelIndex, totalBoxes, projectName, grou
             const wrapperClass = isPrint ? 'thermal-label-print' : 'thermal-label-preview';
 
             if (isSmall) {
-                // ΔΙΑΤΑΞΗ ΓΙΑ ΜΙΚΡΗ ΕΤΙΚΕΤΑ: 62mm Πλάτος x 29mm Ύψος (DK-11209)
-                const previewStyle = isPrint ? '' : 'width: 62mm; height: 29mm; box-sizing: border-box; background: #fff; color: #000; border: 2px solid #000; border-radius: 4px; padding: 2mm 3mm; display: flex; flex-direction: column; justify-content: space-between; margin: 0 auto 12px auto; overflow: hidden;';
+                // ΔΙΑΤΑΞΗ ΓΙΑ ΜΙΚΡΗ ΕΤΙΚΕΤΑ: 62mm Πλάτος x 29mm Ύψος (DK-11209) - Συμπαγής για να μην κόβεται
+                const previewStyle = isPrint ? '' : 'width: 62mm; height: 29mm; box-sizing: border-box; background: #fff; color: #000; border: 2px solid #000; border-radius: 4px; padding: 1.5mm 3mm; display: flex; flex-direction: column; justify-content: space-between; margin: 0 auto 12px auto; overflow: hidden;';
                 return `
                     <div class="${wrapperClass}" style="${previewStyle}">
-                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #000; padding-bottom: 1px;">
-                            <span style="font-weight: 900; font-size: 8px; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">ATRION</span>
-                            <span style="font-weight: 900; font-size: 11px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #000; padding-bottom: 1px; line-height: 1;">
+                            <span style="font-weight: 900; font-size: 7.5px; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">ATRION</span>
+                            <span style="font-weight: 900; font-size: 10.5px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 125px;">
                                 ${projectName}${groupNameTag}
                             </span>
-                            <span style="font-weight: 900; font-size: 9px; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">
+                            <span style="font-weight: 900; font-size: 8.5px; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">
                                 ${labelIndex}/${totalBoxes}
                             </span>
                         </div>
-                        <div style="display: flex; justify-content: space-around; align-items: center; margin: 2px 0;">
+                        <div style="display: flex; justify-content: space-around; align-items: center; line-height: 1; margin: 1px 0;">
                             <div style="font-size: 13px; font-weight: 900;">${plan.itemsPerBox} <span style="font-size: 9px; font-weight: 700;">τμχ</span></div>
-                            <div style="width: 1.5px; height: 14px; background: #000;"></div>
+                            <div style="width: 1.5px; height: 12px; background: #000;"></div>
                             <div style="font-size: 13px; font-weight: 900;">${plan.weightPerBox} <span style="font-size: 9px; font-weight: 700;">kg</span></div>
                         </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 7.5px; font-weight: 800; border-top: 1px solid #000; padding-top: 1px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 7.5px; font-weight: 800; border-top: 1px solid #000; padding-top: 1px; line-height: 1;">
                             <span>📦 ${cleanBoxName}</span>
                             <span>${todayStr}</span>
                         </div>
@@ -1626,9 +1626,10 @@ function generateSingleLabelHtml(plan, labelIndex, totalBoxes, projectName, grou
             const sizeVal = document.getElementById('labelSizeSelect').value;
             const isSmall = (sizeVal === '62x29');
 
+            const pageSizeCss = isSmall ? '62mm 29mm' : '100mm 62mm landscape';
             const pageWidth = isSmall ? '62mm' : '100mm';
-            const pageHeight = isSmall ? '29mm' : '62mm';
-            const labelPadding = isSmall ? '2mm 3mm' : '4mm 6mm';
+            const contentHeight = isSmall ? '25.5mm' : '58mm';
+            const labelPadding = isSmall ? '1.2mm 3mm' : '4mm 6mm';
 
             let labelIndex = 1;
             const todayStr = new Date().toLocaleDateString('el-GR');
@@ -1664,7 +1665,7 @@ function generateSingleLabelHtml(plan, labelIndex, totalBoxes, projectName, grou
                     <title>Εκτύπωση Ετικετών</title>
                     <style>
                         @page {
-                            size: ${pageWidth} ${pageHeight} landscape;
+                            size: ${pageSizeCss};
                             margin: 0;
                         }
                         * {
@@ -1681,7 +1682,7 @@ function generateSingleLabelHtml(plan, labelIndex, totalBoxes, projectName, grou
                         }
                         .thermal-label-print {
                             width: ${pageWidth};
-                            height: ${pageHeight};
+                            height: ${contentHeight};
                             padding: ${labelPadding};
                             display: flex;
                             flex-direction: column;
