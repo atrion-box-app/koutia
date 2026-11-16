@@ -294,7 +294,7 @@
                                 ⚖️ Όριο Βάρους / Κιβώτιο
                             </label>
                             <div class="flex items-center gap-1">
-                                <input type="number" id="maxWeightLimit" value="18" class="w-full text-xs p-1 text-center font-bold border border-amber-300 rounded bg-white focus:outline-none">
+                                <input type="number" step="0.1" id="maxWeightLimit" value="18" class="w-full text-xs p-1 text-center font-bold border border-amber-300 rounded bg-white focus:outline-none">
                                 <span class="text-xs font-bold text-amber-900">kg</span>
                             </div>
                         </div>
@@ -756,115 +756,76 @@
             }
         }
 
-function calculateFitPerBox(itemL, itemW, itemH, binL, binW, binH) {
+        /* STRICT & ACCURATE PACKING ALGORITHM */
+        function calculateFitPerBox(itemL, itemW, itemH, binL, binW, binH) {
             const orientations = [
                 [itemL, itemW, itemH], [itemL, itemH, itemW],
                 [itemW, itemL, itemH], [itemW, itemH, itemL],
                 [itemH, itemL, itemW], [itemH, itemW, itemL]
             ];
 
-            let bestResult = {
-                maxCount: 0,
-                bestOrientation: orientations[0],
-                bestGrid: { nx: 0, ny: 0, nz: 0 },
-                blocks: []
-            };
+            let maxTotalCount = 0;
+            let bestOrientation = null;
+            let bestGrid = { nx: 0, ny: 0, nz: 0 };
 
-            function packBlock(subL, subW, subH, ox, oy, oz) {
-                if (subL <= 0 || subW <= 0 || subH <= 0) return { count: 0, items: [] };
-                let maxSub = 0;
-                let bestSubItems = [];
+            function getSimpleGrid(iL, iW, iH, bL, bW, bH) {
+                if (iL <= 0 || iW <= 0 || iH <= 0) return 0;
+                if (bL < iL - 0.001 || bW < iW - 0.001 || bH < iH - 0.001) return 0;
+                return Math.floor(bL / iL) * Math.floor(bW / iW) * Math.floor(bH / iH);
+            }
 
-                orientations.forEach(([dL, dW, dH]) => {
-                    if (subL >= dL && subW >= dW && subH >= dH) {
-                        const nx = Math.floor(subL / dL);
-                        const ny = Math.floor(subW / dW);
-                        const nz = Math.floor(subH / dH);
-                        const count = nx * ny * nz;
-
-                        if (count > maxSub) {
-                            maxSub = count;
-                            let items = [];
-                            for (let iz = 0; iz < nz; iz++) {
-                                for (let iy = 0; iy < ny; iy++) {
-                                    for (let ix = 0; ix < nx; ix++) {
-                                        items.push({
-                                            x: ox + ix * dL,
-                                            y: oy + iy * dW,
-                                            z: oz + iz * dH,
-                                            dim: [dL, dW, dH]
-                                        });
-                                    }
-                                }
-                            }
-                            bestSubItems = items;
-                        }
-                    }
+            function getMaxFitInRegion(bL, bW, bH) {
+                if (bL <= 0 || bW <= 0 || bH <= 0) return 0;
+                let best = 0;
+                orientations.forEach(([rL, rW, rH]) => {
+                    const fit = getSimpleGrid(rL, rW, rH, bL, bW, bH);
+                    if (fit > best) best = fit;
                 });
-                return { count: maxSub, items: bestSubItems };
+                return best;
             }
 
             orientations.forEach(([iL, iW, iH]) => {
-                if (binL < iL || binW < iW || binH < iH) return;
+                if (binL < iL - 0.001 || binW < iW - 0.001 || binH < iH - 0.001) return;
 
                 const nx = Math.floor(binL / iL);
                 const ny = Math.floor(binW / iW);
                 const nz = Math.floor(binH / iH);
                 const primaryCount = nx * ny * nz;
+
                 if (primaryCount === 0) return;
 
-                let primaryItems = [];
-                for (let iz = 0; iz < nz; iz++) {
-                    for (let iy = 0; iy < ny; iy++) {
-                        for (let ix = 0; ix < nx; ix++) {
-                            primaryItems.push({
-                                x: ix * iL,
-                                y: iy * iW,
-                                z: iz * iH,
-                                dim: [iL, iW, iH]
-                            });
-                        }
-                    }
-                }
+                const usedL = nx * iL;
+                const usedW = ny * iW;
+                const usedH = nz * iH;
 
-                const uL = nx * iL;
-                const uW = ny * iW;
-                const uH = nz * iH;
+                const remL = Math.max(0, binL - usedL);
+                const remW = Math.max(0, binW - usedW);
+                const remH = Math.max(0, binH - usedH);
 
-                // Δοκιμή 1: Υποδιαίρεση κατά μήκος (X cut)
-                const xCut1 = packBlock(binL - uL, binW, binH, uL, 0, 0);
-                const xCut2 = packBlock(uL, binW - uW, binH, 0, uW, 0);
-                const xCut3 = packBlock(uL, uW, binH - uH, 0, 0, uH);
-                const totalX = primaryCount + xCut1.count + xCut2.count + xCut3.count;
+                const addA1 = getMaxFitInRegion(remL, binW, binH);
+                const addA2 = getMaxFitInRegion(usedL, remW, binH);
+                const addA3 = getMaxFitInRegion(usedL, usedW, remH);
+                const totalA = primaryCount + addA1 + addA2 + addA3;
 
-                // Δοκιμή 2: Υποδιαίρεση κατά πλάτος (Y cut)
-                const yCut1 = packBlock(binL, binW - uW, binH, 0, uW, 0);
-                const yCut2 = packBlock(binL - uL, uW, binH, uL, 0, 0);
-                const yCut3 = packBlock(uL, uW, binH - uH, 0, 0, uH);
-                const totalY = primaryCount + yCut1.count + yCut2.count + yCut3.count;
+                const addB1 = getMaxFitInRegion(binL, remW, binH);
+                const addB2 = getMaxFitInRegion(remL, usedW, binH);
+                const addB3 = getMaxFitInRegion(usedL, usedW, remH);
+                const totalB = primaryCount + addB1 + addB2 + addB3;
 
-                let currentTotal = primaryCount;
-                let currentItems = primaryItems;
+                const currentBest = Math.max(primaryCount, totalA, totalB);
 
-                if (totalY >= totalX && totalY > currentTotal) {
-                    currentTotal = totalY;
-                    currentItems = [...primaryItems, ...yCut1.items, ...yCut2.items, ...yCut3.items];
-                } else if (totalX > totalY && totalX > currentTotal) {
-                    currentTotal = totalX;
-                    currentItems = [...primaryItems, ...xCut1.items, ...xCut2.items, ...xCut3.items];
-                }
-
-                if (currentTotal > bestResult.maxCount) {
-                    bestResult = {
-                        maxCount: currentTotal,
-                        bestOrientation: [iL, iW, iH],
-                        bestGrid: { nx, ny, nz },
-                        blocks: currentItems
-                    };
+                if (currentBest > maxTotalCount) {
+                    maxTotalCount = currentBest;
+                    bestOrientation = [iL, iW, iH];
+                    bestGrid = { nx, ny, nz };
                 }
             });
 
-            return bestResult;
+            return { 
+                maxCount: maxTotalCount, 
+                bestOrientation: bestOrientation || [itemL, itemW, itemH], 
+                bestGrid 
+            };
         }
 
         function evaluateCandidateBoxes(activeBinsList, itemL, itemW, itemH, itemWeight, maxWeightLimit, volFactor, boxMargin) {
@@ -875,7 +836,7 @@ function calculateFitPerBox(itemL, itemW, itemH, binL, binW, binH) {
 
                 const fitRes = calculateFitPerBox(itemL, itemW, itemH, effectiveBinL, effectiveBinW, effectiveBinH);
                 const maxVolQty = fitRes.maxCount;
-                const maxWeightQty = Math.floor(maxWeightLimit / itemWeight);
+                const maxWeightQty = Math.floor((maxWeightLimit + 0.001) / itemWeight);
                 const fitPerBox = Math.min(maxVolQty, maxWeightQty);
                 const binVol = bin.l * bin.w * bin.h;
                 const volWeight = binVol / volFactor;
@@ -888,64 +849,66 @@ function calculateFitPerBox(itemL, itemW, itemH, binL, binW, binH) {
                     volWeight,
                     orientation: fitRes.bestOrientation,
                     grid: fitRes.bestGrid,
-                    blocks: fitRes.blocks,
                     effectiveBinDimensions: { l: effectiveBinL, w: effectiveBinW, h: effectiveBinH }
                 };
             }).filter(item => item.fitPerBox > 0);
         }
 
+        /* FIXED PACK QUANTITY FUNCTION (EQUAL DISTRIBUTION & MAX PACKING) */
         function packQuantity(qtyToPack, binEvaluations, singleItemVol, itemWeight, isEqualDist = false) {
-            let remaining = qtyToPack;
             let plan = [];
 
             if (isEqualDist) {
                 const maxCapacity = Math.max(...binEvaluations.map(e => e.fitPerBox));
-                const estBoxes = Math.ceil(qtyToPack / maxCapacity);
-                const itemsPerBoxTarget = Math.ceil(qtyToPack / estBoxes);
+                const estBoxes = Math.max(1, Math.ceil(qtyToPack / maxCapacity));
 
+                const baseItems = Math.floor(qtyToPack / estBoxes);
+                const remainderItems = qtyToPack % estBoxes;
+                const maxItemsForAnyBox = baseItems + (remainderItems > 0 ? 1 : 0);
+
+                // Επιλογή του μικρότερου κουτιού που χωράει το μέγιστο μερίδιο
                 let candidateBins = binEvaluations
-                    .filter(e => e.fitPerBox >= itemsPerBoxTarget)
+                    .filter(e => e.fitPerBox >= maxItemsForAnyBox)
                     .sort((a, b) => a.binVol - b.binVol);
 
                 let chosenBox = candidateBins.length > 0 ? candidateBins[0] : binEvaluations.sort((a, b) => b.fitPerBox - a.fitPerBox)[0];
 
-                let itemsLeft = qtyToPack;
-                while (itemsLeft > 0) {
-                    let itemsForThisBox = Math.min(itemsPerBoxTarget, itemsLeft);
-                    let packedVol = itemsForThisBox * singleItemVol;
-                    let fillRate = packedVol / chosenBox.binVol;
+                for (let b = 0; b < estBoxes; b++) {
+                    const itemsInThisBox = baseItems + (b < remainderItems ? 1 : 0);
+                    if (itemsInThisBox <= 0) continue;
 
-                    plan.push({
-                        bin: chosenBox.bin,
-                        count: 1,
-                        itemsPerBox: itemsForThisBox,
-                        maxVolQty: chosenBox.maxVolQty,
-                        orientation: chosenBox.orientation,
-                        grid: chosenBox.grid,
-                        blocks: chosenBox.blocks,
-                        totalItems: itemsForThisBox,
-                        weightPerBox: (itemsForThisBox * itemWeight).toFixed(2),
-                        volWeightPerBox: chosenBox.volWeight.toFixed(2),
-                        chargeableWeightPerBox: Math.max(itemsForThisBox * itemWeight, chosenBox.volWeight).toFixed(2),
-                        fillRatePercent: (fillRate * 100).toFixed(1),
-                        isPartial: itemsForThisBox < itemsPerBoxTarget
-                    });
-                    itemsLeft -= itemsForThisBox;
-                }
+                    const packedVol = itemsInThisBox * singleItemVol;
+                    const fillRate = (packedVol / chosenBox.binVol) * 100;
+                    const realWeight = (itemsInThisBox * itemWeight).toFixed(2);
+                    const volWeight = chosenBox.volWeight.toFixed(2);
+                    const chargeableWeight = Math.max(parseFloat(realWeight), parseFloat(volWeight)).toFixed(2);
 
-                let groupedPlan = [];
-                plan.forEach(item => {
-                    let existing = groupedPlan.find(g => g.bin.id === item.bin.id && g.itemsPerBox === item.itemsPerBox);
+                    let existing = plan.find(p => p.bin.id === chosenBox.bin.id && p.itemsPerBox === itemsInThisBox);
                     if (existing) {
                         existing.count += 1;
-                        existing.totalItems += item.itemsPerBox;
+                        existing.totalItems += itemsInThisBox;
                     } else {
-                        groupedPlan.push({ ...item });
+                        plan.push({
+                            bin: chosenBox.bin,
+                            count: 1,
+                            itemsPerBox: itemsInThisBox,
+                            maxVolQty: chosenBox.maxVolQty,
+                            orientation: chosenBox.orientation,
+                            grid: chosenBox.grid,
+                            totalItems: itemsInThisBox,
+                            weightPerBox: realWeight,
+                            volWeightPerBox: volWeight,
+                            chargeableWeightPerBox: chargeableWeight,
+                            fillRatePercent: fillRate.toFixed(1),
+                            isPartial: itemsInThisBox < chosenBox.fitPerBox
+                        });
                     }
-                });
-                return groupedPlan;
+                }
+                return plan;
             }
 
+            // Standard Max Packing
+            let remaining = qtyToPack;
             while (remaining > 0) {
                 let candidates = binEvaluations.map(e => {
                     const itemsToPut = Math.min(e.fitPerBox, remaining);
@@ -983,12 +946,11 @@ function calculateFitPerBox(itemL, itemW, itemH, binL, binW, binH) {
                         maxVolQty: bestChoice.maxVolQty,
                         orientation: bestChoice.orientation,
                         grid: bestChoice.grid,
-                        blocks: bestChoice.blocks,
                         totalItems: fullBoxesCount * bestChoice.itemsToPut,
                         weightPerBox: (bestChoice.itemsToPut * itemWeight).toFixed(2),
                         volWeightPerBox: bestChoice.volWeight.toFixed(2),
                         chargeableWeightPerBox: Math.max(bestChoice.itemsToPut * itemWeight, bestChoice.volWeight).toFixed(2),
-                        fillRatePercent: (bestChoice.fillRate * 100).toFixed(1),
+                        fillRatePercent: ((bestChoice.packedVol / bestChoice.binVol) * 100).toFixed(1),
                         isPartial: false
                     });
                     remaining -= (fullBoxesCount * bestChoice.itemsToPut);
@@ -1008,7 +970,6 @@ function calculateFitPerBox(itemL, itemW, itemH, binL, binW, binH) {
                         maxVolQty: remainderChoice.maxVolQty,
                         orientation: remainderChoice.orientation,
                         grid: remainderChoice.grid,
-                        blocks: remainderChoice.blocks,
                         totalItems: remaining,
                         weightPerBox: (remaining * itemWeight).toFixed(2),
                         volWeightPerBox: remainderChoice.volWeight.toFixed(2),
@@ -1302,7 +1263,7 @@ function calculateFitPerBox(itemL, itemW, itemH, binL, binW, binH) {
 
             const fitRes = calculateFitPerBox(itemL, itemW, itemH, effectiveBinL, effectiveBinW, effectiveBinH);
             const maxVolQty = fitRes.maxCount;
-            const fitPerBox = Math.min(maxVolQty, Math.floor(currentCalculation.maxWeightLimit / itemWeight));
+            const fitPerBox = Math.min(maxVolQty, Math.floor((currentCalculation.maxWeightLimit + 0.001) / itemWeight));
             const binVol = selectedBin.l * selectedBin.w * selectedBin.h;
             const volWeight = binVol / volFactor;
 
@@ -1355,48 +1316,47 @@ function calculateFitPerBox(itemL, itemW, itemH, binL, binW, binH) {
         function init3DScene(plan) {
             const container = document.getElementById('threeCanvasContainer');
             container.innerHTML = '';
-        
+
             const width = container.clientWidth || 500;
             const height = container.clientHeight || 320;
-        
+
             threeScene = new THREE.Scene();
             threeScene.background = new THREE.Color(0x0b132b);
-        
+
             threeCamera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-        
+
             threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             threeRenderer.setSize(width, height);
             threeRenderer.setPixelRatio(window.devicePixelRatio);
             container.appendChild(threeRenderer.domElement);
-        
+
             if (window.THREE.OrbitControls) {
                 threeControls = new THREE.OrbitControls(threeCamera, threeRenderer.domElement);
                 threeControls.enableDamping = true;
                 threeControls.dampingFactor = 0.08;
             }
-        
+
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
             threeScene.add(ambientLight);
-        
+
             const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.85);
             dirLight1.position.set(100, 150, 100);
             threeScene.add(dirLight1);
-        
+
             const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 0.45);
             dirLight2.position.set(-100, -100, -100);
             threeScene.add(dirLight2);
-        
+
             const binL = plan.bin.l;
             const binW = plan.bin.w;
             const binH = plan.bin.h;
-        
-            // Εξωτερικό περίβλημα χαρτοκιβωτίου
+
             const boxGeo = new THREE.BoxGeometry(binL, binH, binW);
             const boxEdges = new THREE.EdgesGeometry(boxGeo);
             const lineMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 });
             const wireframe = new THREE.LineSegments(boxEdges, lineMat);
             threeScene.add(wireframe);
-        
+
             const boxMat = new THREE.MeshPhongMaterial({
                 color: 0x0284c7,
                 transparent: true,
@@ -1405,77 +1365,71 @@ function calculateFitPerBox(itemL, itemW, itemH, binL, binW, binH) {
             });
             const boxMesh = new THREE.Mesh(boxGeo, boxMat);
             threeScene.add(boxMesh);
-        
+
+            const [iL, iW, iH] = plan.orientation;
+            const nx = Math.max(1, plan.grid.nx);
+            const ny = Math.max(1, plan.grid.ny);
+            const nz = Math.max(1, plan.grid.nz);
+            const targetItems = plan.itemsPerBox;
+
             const itemsGroup = new THREE.Group();
-            const itemEdgeMat = new THREE.LineBasicMaterial({ color: 0x064e3b });
+
+            const itemGeo = new THREE.BoxGeometry(Math.max(0.5, iL - 0.3), Math.max(0.5, iH - 0.3), Math.max(0.5, iW - 0.3));
             const itemMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.35, metalness: 0.1 });
             const residualMat = new THREE.MeshStandardMaterial({ color: 0x06b6d4, roughness: 0.35, metalness: 0.1 });
-        
-            const startX = -binL / 2;
-            const startY = -binH / 2;
-            const startZ = -binW / 2;
-        
-            // Δημιουργία λίστας κουτιών
-            let itemsToRender = [];
-        
-            if (plan.blocks && plan.blocks.length > 0) {
-                itemsToRender = plan.blocks.slice(0, plan.itemsPerBox);
-            } else {
-                // Fallback αν δεν βρει το blocks
-                const [iL, iW, iH] = plan.orientation;
-                const nx = plan.grid.nx;
-                const ny = plan.grid.ny;
-                const nz = plan.grid.nz;
-                let count = 0;
-        
-                for (let iz = 0; iz < nz && count < plan.itemsPerBox; iz++) {
-                    for (let iy = 0; iy < ny && count < plan.itemsPerBox; iy++) {
-                        for (let ix = 0; ix < nx && count < plan.itemsPerBox; ix++) {
-                            itemsToRender.push({
-                                x: ix * iL,
-                                y: iy * iW,
-                                z: iz * iH,
-                                dim: [iL, iW, iH]
-                            });
-                            count++;
-                        }
+            const itemEdges = new THREE.EdgesGeometry(itemGeo);
+            const itemEdgeMat = new THREE.LineBasicMaterial({ color: 0x064e3b });
+
+            const startX = -binL / 2 + iL / 2;
+            const startY = -binH / 2 + iH / 2;
+            const startZ = -binW / 2 + iW / 2;
+
+            let placed = 0;
+
+            for (let iz = 0; iz < nz && placed < targetItems; iz++) {
+                for (let iy = 0; iy < ny && placed < targetItems; iy++) {
+                    for (let ix = 0; ix < nx && placed < targetItems; ix++) {
+                        const mesh = new THREE.Mesh(itemGeo, itemMat);
+                        mesh.position.set(startX + ix * iL, startY + iz * iH, startZ + iy * iW);
+                        mesh.add(new THREE.LineSegments(itemEdges, itemEdgeMat));
+                        itemsGroup.add(mesh);
+                        placed++;
                     }
                 }
             }
-        
-            const primaryLimit = plan.grid.nx * plan.grid.ny * plan.grid.nz;
-        
-            itemsToRender.forEach((item, index) => {
-                const [iL, iW, iH] = item.dim;
-                const itemGeo = new THREE.BoxGeometry(Math.max(0.5, iL - 0.3), Math.max(0.5, iH - 0.3), Math.max(0.5, iW - 0.3));
-                const itemEdges = new THREE.EdgesGeometry(itemGeo);
-                
-                const currentMat = (index < primaryLimit) ? itemMat : residualMat;
-                const mesh = new THREE.Mesh(itemGeo, currentMat);
-        
-                mesh.position.set(
-                    startX + item.x + iL / 2,
-                    startY + item.z + iH / 2,
-                    startZ + item.y + iW / 2
-                );
-        
-                mesh.add(new THREE.LineSegments(itemEdges, itemEdgeMat));
-                itemsGroup.add(mesh);
-            });
-        
+
+            if (placed < targetItems) {
+                const extraGeo = new THREE.BoxGeometry(Math.max(0.5, iL - 0.3), Math.max(0.5, iW - 0.3), Math.max(0.5, iH - 0.3));
+                const extraEdges = new THREE.EdgesGeometry(extraGeo);
+                const extraEdgeMat = new THREE.LineBasicMaterial({ color: 0x065f46 });
+                const sideZ = binW / 2 - iH / 2;
+
+                while (placed < targetItems) {
+                    const extraMesh = new THREE.Mesh(extraGeo, residualMat);
+                    const extraIdx = placed - (nx * ny * nz);
+                    const extraX = -binL / 2 + iL / 2 + (extraIdx % 2) * iL;
+                    const extraY = -binH / 2 + iW / 2 + Math.floor(extraIdx / 2) * iW;
+
+                    extraMesh.position.set(extraX, extraY, sideZ);
+                    extraMesh.add(new THREE.LineSegments(extraEdges, extraEdgeMat));
+                    itemsGroup.add(extraMesh);
+                    placed++;
+                }
+            }
+
             threeScene.add(itemsGroup);
-        
+
             const maxDim = Math.max(binL, binW, binH);
             threeCamera.position.set(maxDim * 1.5, maxDim * 1.3, maxDim * 1.8);
             threeCamera.lookAt(0, 0, 0);
-        
+
             if (threeControls) {
                 threeControls.target.set(0, 0, 0);
                 threeControls.update();
             }
-        
+
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
-        
+
             function animate() {
                 animationFrameId = requestAnimationFrame(animate);
                 if (threeControls) threeControls.update();
@@ -1505,6 +1459,7 @@ function calculateFitPerBox(itemL, itemW, itemH, binL, binW, binH) {
             }
         });
 
+        /* EXPORT DATA TO GOOGLE SHEETS (SMART MATCH BY PROJECT NAME) */
         function sendDataToSheet() {
             if (!currentCalculation) {
                 showToast("⚠️ Παρακαλώ πραγματοποιήστε πρώτα έναν υπολογισμό.");
@@ -1526,10 +1481,12 @@ function calculateFitPerBox(itemL, itemW, itemH, binL, binW, binH) {
             });
 
             const columnKText = groupTexts.join(' | ');
+            let selectedProjectObj = (projectIndex !== "" && googleProjects[parseInt(projectIndex)]) ? googleProjects[parseInt(projectIndex)] : null;
 
             const payload = {
                 projectName: currentCalculation.projectName,
-                row: projectIndex !== "" && googleProjects[parseInt(projectIndex)] ? googleProjects[parseInt(projectIndex)].row : null,
+                selectedProjectName: selectedProjectObj ? selectedProjectObj.name : currentCalculation.projectName,
+                row: selectedProjectObj ? selectedProjectObj.row : null,
                 packingSummary: columnKText
             };
 
@@ -1622,7 +1579,7 @@ function calculateFitPerBox(itemL, itemW, itemH, binL, binW, binH) {
             }
         }
 
-function triggerThermalPrint() {
+        function triggerThermalPrint() {
             if (!currentCalculation) return;
 
             let labelIndex = 1;
@@ -1738,6 +1695,7 @@ function triggerThermalPrint() {
                 printFrame.contentWindow.print();
             }, 300);
         }
+
         function copyResultsToClipboard() {
             if (!currentCalculation) return;
 
